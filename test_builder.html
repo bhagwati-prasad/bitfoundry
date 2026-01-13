@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Builder Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="stylesheet" href="./css/builder_styles.css">
+</head>
+<body>
+    <div id="ui-layer">
+        <div class="header-box">
+            <div class="top-row">
+                <div>
+                    <h1>Graph Builder - Simple Test</h1>
+                    <p class="subtitle">Testing all features</p>
+                </div>
+                <div class="header-actions">
+                    <div class="mode-toggle">
+                        <button id="viewer-mode-btn" class="mode-btn active">
+                            <span>👁️</span> View
+                        </button>
+                        <button id="builder-mode-btn" class="mode-btn">
+                            <span>🔧</span> Build
+                        </button>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="import-btn" class="btn btn-secondary">📥 Import</button>
+                        <button id="export-btn" class="btn btn-secondary">📤 Export</button>
+                        <button id="settings-btn" class="btn btn-secondary">⚙️ Settings</button>
+                    </div>
+                </div>
+            </div>
+            <div class="breadcrumbs" id="breadcrumbs"></div>
+        </div>
+        <div class="legend-panel" id="legend"></div>
+    </div>
+
+    <div id="settings-sidebar" class="settings-sidebar">
+        <div class="settings-header">
+            <h3>Group Settings</h3>
+            <button id="close-settings-btn" class="close-btn">×</button>
+        </div>
+        <div class="settings-content" id="settings-content"></div>
+    </div>
+
+    <div id="graph-container"></div>
+    <div id="modal"></div>
+
+    <script type="text/javascript" src="./js/utils.js"></script>
+    <script type="text/javascript" src="./js/ecosystem_graph_entities.js"></script>
+    <script type="text/javascript" src="./js/graph_modal.js"></script>
+    <script type="text/javascript" src="./js/context_menu.js"></script>
+    <script type="text/javascript" src="./js/property_editor.js"></script>
+    <script type="text/javascript" src="./js/ecosystem_graph.js"></script>
+    <script type="text/javascript" src="./js/ecosystem_graph_builder.js"></script>
+
+    <script>
+        // Simple test data
+        const testData = {
+            id: "root",
+            label: "Test Root",
+            nodes: [
+                { id: "node1", label: "Node 1", group: "central", desc: "First node" },
+                { id: "node2", label: "Node 2", group: "end", desc: "Second node" },
+                { id: "node3", label: "Node 3", group: "ou", desc: "Third node" }
+            ],
+            links: [
+                { source: "node1", target: "node2", type: "flow", label: "Link 1" },
+                { source: "node2", target: "node3", type: "internal", label: "Link 2" }
+            ]
+        };
+
+        let graph, builder, myGroups, modalHandler;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing test...');
+
+            // Initialize groups
+            const groupData = {
+                central: { color: "#2563eb", label: "Central", radius: 40 },
+                ou: { color: "#059669", label: "Operating", radius: 30 },
+                end: { color: "#d97706", label: "End User", radius: 25 }
+            };
+            myGroups = new EntityGroups(groupData);
+            myGroups.renderLegend("#legend");
+            console.log('Groups initialized');
+
+            // Initialize modal
+            modalHandler = new GraphModal("#modal");
+            console.log('Modal initialized');
+
+            // Initialize graph
+            graph = new EcosystemGraph(testData, myGroups, {
+                containerId: "#graph-container",
+                callbacks: {
+                    onEntityClick: (data) => modalHandler.open(data, 'entity'),
+                    onFlowClick: (data) => modalHandler.open(data, 'interaction')
+                }
+            });
+            console.log('Graph initialized');
+
+            // Initialize builder
+            builder = new EcosystemGraphBuilder(graph, myGroups);
+            console.log('Builder initialized');
+
+            // Setup mode toggle
+            document.getElementById('viewer-mode-btn').addEventListener('click', () => {
+                builder.disableBuilderMode();
+                document.getElementById('viewer-mode-btn').classList.add('active');
+                document.getElementById('builder-mode-btn').classList.remove('active');
+                console.log('Viewer mode activated');
+            });
+
+            document.getElementById('builder-mode-btn').addEventListener('click', () => {
+                builder.enableBuilderMode();
+                document.getElementById('builder-mode-btn').classList.add('active');
+                document.getElementById('viewer-mode-btn').classList.remove('active');
+                console.log('Builder mode activated');
+            });
+
+            // Setup actions
+            document.getElementById('import-btn').addEventListener('click', () => {
+                builder.importData((data) => console.log('Imported:', data));
+            });
+
+            document.getElementById('export-btn').addEventListener('click', () => {
+                builder.exportData();
+            });
+
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-sidebar').classList.add('open');
+            });
+
+            document.getElementById('close-settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-sidebar').classList.remove('open');
+            });
+
+            // Initialize settings
+            initSettings();
+
+            console.log('All initialized successfully!');
+        });
+
+        function initSettings() {
+            const settingsContent = document.getElementById('settings-content');
+            settingsContent.innerHTML = '';
+
+            myGroups.groups.forEach((groupData, key) => {
+                const item = document.createElement('div');
+                item.className = 'settings-group-item';
+
+                const header = document.createElement('div');
+                header.className = 'settings-group-header';
+
+                const swatch = document.createElement('div');
+                swatch.className = 'settings-color-swatch';
+                swatch.style.backgroundColor = groupData.color;
+
+                const label = document.createElement('span');
+                label.className = 'settings-group-label';
+                label.textContent = groupData.label;
+
+                header.appendChild(swatch);
+                header.appendChild(label);
+
+                const control = document.createElement('div');
+                control.className = 'settings-radius-control';
+
+                const controlLabel = document.createElement('label');
+                controlLabel.textContent = 'Default Radius:';
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = '10';
+                input.max = '100';
+                input.value = groupData.radius;
+                input.className = 'settings-radius-input';
+
+                input.addEventListener('change', (e) => {
+                    const newRadius = parseInt(e.target.value);
+                    myGroups.update(key, { radius: newRadius });
+                    
+                    const currentData = graph.getCurrentData();
+                    currentData.nodes.forEach(node => {
+                        if (node.group === key) {
+                            node.r = newRadius;
+                        }
+                    });
+                    graph.render(currentData);
+                    if (builder.isBuilderMode) {
+                        builder._updateGraphForBuilder();
+                    }
+                });
+
+                control.appendChild(controlLabel);
+                control.appendChild(input);
+
+                item.appendChild(header);
+                item.appendChild(control);
+
+                settingsContent.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>

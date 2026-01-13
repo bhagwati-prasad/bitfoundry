@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBPS Graph Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="stylesheet" href="./css/builder_styles.css">
+</head>
+
+<body>
+
+    <div id="ui-layer">
+        <div class="header-box">
+            <div class="top-row">
+                <div>
+                    <h1>BBPS Architecture Builder</h1>
+                    <p class="subtitle">Build & Visualize Graph Structures</p>
+                </div>
+                <div class="header-actions">
+                    <!-- Mode Toggle -->
+                    <div class="mode-toggle">
+                        <button id="viewer-mode-btn" class="mode-btn active">
+                            <span>👁️</span> View
+                        </button>
+                        <button id="builder-mode-btn" class="mode-btn">
+                            <span>🔧</span> Build
+                        </button>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="action-buttons">
+                        <button id="import-btn" class="btn btn-secondary" title="Import JSON">
+                            📥 Import
+                        </button>
+                        <button id="export-btn" class="btn btn-secondary" title="Export JSON">
+                            📤 Export
+                        </button>
+                        <button id="settings-btn" class="btn btn-secondary" title="Settings">
+                            ⚙️ Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Breadcrumb Container -->
+            <div class="breadcrumbs" id="breadcrumbs"></div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend-panel" id="legend"></div>
+    </div>
+
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar" class="settings-sidebar">
+        <div class="settings-header">
+            <h3>Group Settings</h3>
+            <button id="close-settings-btn" class="close-btn">×</button>
+        </div>
+        <div class="settings-content" id="settings-content">
+            <!-- Will be populated dynamically -->
+        </div>
+    </div>
+
+    <div id="graph-container"></div>
+
+    <div id="modal"></div>
+
+    <script type="text/javascript" src="./js/ecosystem_data.js"></script>
+    <script type="text/javascript" src="./js/utils.js"></script>
+    <script type="text/javascript" src="./js/ecosystem_graph_entities.js"></script>
+    <script type="text/javascript" src="./js/graph_modal.js"></script>
+    <script type="text/javascript" src="./js/context_menu.js"></script>
+    <script type="text/javascript" src="./js/property_editor.js"></script>
+    <script type="text/javascript" src="./js/ecosystem_graph.js"></script>
+    <script type="text/javascript" src="./js/ecosystem_graph_builder.js"></script>
+
+    <script>
+        let graph;
+        let builder;
+        let myGroups;
+        let modalHandler;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize groups
+            const groupData = {
+                central: { color: "#2563eb", label: "Central Unit", radius: 40 },
+                ou: { color: "#059669", label: "Operating Unit", radius: 30 },
+                end: { color: "#d97706", label: "End User", radius: 25 },
+                support: { color: "#7c3aed", label: "Support System", radius: 25 },
+                internal: { color: "#475569", label: "Internal Component", radius: 25 }
+            };
+            myGroups = new EntityGroups(groupData);
+            myGroups.renderLegend("#legend");
+
+            // Initialize modal
+            modalHandler = new GraphModal("#modal");
+
+            // Initialize graph
+            graph = new EcosystemGraph(ecosystemData, myGroups, {
+                containerId: "#graph-container",
+                callbacks: {
+                    onEntityClick: (data) => modalHandler.open(data, 'entity'),
+                    onFlowClick: (data) => modalHandler.open(data, 'interaction')
+                }
+            });
+
+            // Initialize builder
+            builder = new EcosystemGraphBuilder(graph, myGroups);
+
+            // Setup mode toggle
+            const viewerBtn = document.getElementById('viewer-mode-btn');
+            const builderBtn = document.getElementById('builder-mode-btn');
+
+            viewerBtn.addEventListener('click', () => {
+                builder.disableBuilderMode();
+                viewerBtn.classList.add('active');
+                builderBtn.classList.remove('active');
+            });
+
+            builderBtn.addEventListener('click', () => {
+                builder.enableBuilderMode();
+                builderBtn.classList.add('active');
+                viewerBtn.classList.remove('active');
+            });
+
+            // Setup action buttons
+            document.getElementById('import-btn').addEventListener('click', () => {
+                builder.importData((data) => {
+                    console.log('Data imported successfully');
+                });
+            });
+
+            document.getElementById('export-btn').addEventListener('click', () => {
+                builder.exportData();
+            });
+
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                openSettingsSidebar();
+            });
+
+            document.getElementById('close-settings-btn').addEventListener('click', () => {
+                closeSettingsSidebar();
+            });
+
+            // Initialize settings sidebar
+            initializeSettingsSidebar();
+        });
+
+        function openSettingsSidebar() {
+            document.getElementById('settings-sidebar').classList.add('open');
+        }
+
+        function closeSettingsSidebar() {
+            document.getElementById('settings-sidebar').classList.remove('open');
+        }
+
+        function initializeSettingsSidebar() {
+            const settingsContent = document.getElementById('settings-content');
+            settingsContent.innerHTML = '';
+
+            myGroups.groups.forEach((groupData, key) => {
+                const groupItem = document.createElement('div');
+                groupItem.className = 'settings-group-item';
+
+                const header = document.createElement('div');
+                header.className = 'settings-group-header';
+
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'settings-color-swatch';
+                colorSwatch.style.backgroundColor = groupData.color;
+
+                const label = document.createElement('span');
+                label.className = 'settings-group-label';
+                label.textContent = groupData.label;
+
+                header.appendChild(colorSwatch);
+                header.appendChild(label);
+
+                const radiusControl = document.createElement('div');
+                radiusControl.className = 'settings-radius-control';
+
+                const radiusLabel = document.createElement('label');
+                radiusLabel.textContent = 'Default Radius:';
+
+                const radiusInput = document.createElement('input');
+                radiusInput.type = 'number';
+                radiusInput.min = '10';
+                radiusInput.max = '100';
+                radiusInput.value = groupData.radius;
+                radiusInput.className = 'settings-radius-input';
+
+                radiusInput.addEventListener('change', (e) => {
+                    const newRadius = parseInt(e.target.value);
+                    myGroups.update(key, { radius: newRadius });
+                    
+                    // Update all nodes of this group in current view
+                    const currentData = graph.getCurrentData();
+                    currentData.nodes.forEach(node => {
+                        if (node.group === key) {
+                            node.r = newRadius;
+                        }
+                    });
+                    graph.render(currentData);
+                    if (builder.isBuilderMode) {
+                        builder._updateGraphForBuilder();
+                    }
+                });
+
+                radiusControl.appendChild(radiusLabel);
+                radiusControl.appendChild(radiusInput);
+
+                groupItem.appendChild(header);
+                groupItem.appendChild(radiusControl);
+
+                settingsContent.appendChild(groupItem);
+            });
+        }
+    </script>
+</body>
+
+</html>

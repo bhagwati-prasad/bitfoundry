@@ -1,3 +1,20 @@
+# BitFoundry Repository
+
+## Graph Visualization & Builder System
+
+This repository contains an interactive graph visualization and building system for ecosystem architectures with drill-down capabilities.
+
+### Quick Links
+- **Viewer**: [ecosystem_graph.html](ecosystem_graph.html) - View and explore existing graphs
+- **Builder**: [graph_builder.html](graph_builder.html) - Create and edit graphs interactively
+- **Test Page**: [test_builder.html](test_builder.html) - Simple test environment
+
+### Documentation
+- **[BUILDER_README.md](BUILDER_README.md)** - Complete guide to the graph builder system
+- **[TESTING_CHECKLIST.md](TESTING_CHECKLIST.md)** - Feature testing and validation guide
+
+---
+
 This is a great foundation. To make this list truly **exhaustive** and cover the *entire* Product Development Lifecycle (PDLC)—from the initial "napkin idea" to post-launch maintenance—we need to expand into business alignment, detailed testing, and operations.
 
 Here is a comprehensive list of documents required for a complete product development lifecycle, categorized by phase.
