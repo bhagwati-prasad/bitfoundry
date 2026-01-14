@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Module Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .demo-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .demo-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+
+        .demo-section .description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .demo-content {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 20px;
+            min-height: 200px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid #007bff;
+            background: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #007bff;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+        }
+
+        .info-box h4 {
+            color: #007bff;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .node-info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .code-example {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌳 Tree Module Demo</h1>
+            <p class="subtitle">Interactive demonstration of three tree visualization modes</p>
+        </header>
+
+        <div class="demo-section">
+            <h2>1. ASCII Graph Renderer</h2>
+            <p class="description">
+                A text-based tree visualization using ASCII or Unicode box-drawing characters. 
+                Perfect for console output or simple displays.
+            </p>
+            
+            <div class="controls">
+                <button class="btn" onclick="renderASCII()">Render ASCII</button>
+                <button class="btn-secondary btn" onclick="toggleASCIIUnicode()">Toggle Unicode/ASCII</button>
+                <button class="btn-secondary btn" onclick="toggleASCIIIcons()">Toggle Icons</button>
+            </div>
+            
+            <div id="ascii-output" class="demo-content"></div>
+            
+            <div class="info-box">
+                <h4>Features:</h4>
+                <p>• Clean tree structure using box-drawing characters<br>
+                   • Configurable icon and ID display<br>
+                   • Compact and depth-indicator modes available<br>
+                   • Export to plain text</p>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="demo-section">
+                <h2>2. Directory View</h2>
+                <p class="description">
+                    A collapsible directory-style tree view, similar to file explorers. 
+                    Click nodes to select, click arrows to expand/collapse.
+                </p>
+                
+                <div class="controls">
+                    <button class="btn" onclick="directoryExpandAll()">Expand All</button>
+                    <button class="btn-secondary btn" onclick="directoryCollapseAll()">Collapse All</button>
+                </div>
+                
+                <div id="directory-output" class="demo-content"></div>
+                
+                <div id="directory-info" class="node-info" style="display:none;"></div>
+            </div>
+
+            <div class="demo-section">
+                <h2>3. Drill-Down View</h2>
+                <p class="description">
+                    An interactive card-based view. Double-click any node with children 
+                    to drill down into its contents. Use breadcrumbs to navigate back.
+                </p>
+                
+                <div class="controls">
+                    <button class="btn" onclick="drilldownGoBack()">Go Back</button>
+                    <button class="btn-secondary btn" onclick="drilldownGoHome()">Go to Root</button>
+                </div>
+                
+                <div id="drilldown-output" class="demo-content"></div>
+                
+                <div id="drilldown-info" class="node-info" style="display:none;"></div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Usage Example</h2>
+            <div class="code-example">
+<span style="color: #c678dd;">import</span> { Tree, TreeNode, ASCIIRenderer, DirectoryRenderer, DrillDownRenderer } <span style="color: #c678dd;">from</span> <span style="color: #98c379;">'./js/tree/index.js'</span>;
+
+<span style="color: #7f848e;">// Create tree structure</span>
+<span style="color: #c678dd;">const</span> root = <span style="color: #c678dd;">new</span> <span style="color: #61afef;">TreeNode</span>({
+    title: <span style="color: #98c379;">'Root'</span>,
+    description: <span style="color: #98c379;">'Root node'</span>,
+    icon: <span style="color: #98c379;">'🌳'</span>
+});
+
+<span style="color: #c678dd;">const</span> child = <span style="color: #c678dd;">new</span> <span style="color: #61afef;">TreeNode</span>({
+    title: <span style="color: #98c379;">'Child'</span>,
+    description: <span style="color: #98c379;">'Child node'</span>,
+    icon: <span style="color: #98c379;">'📁'</span>
+});
+
+root.<span style="color: #61afef;">addChild</span>(child);
+<span style="color: #c678dd;">const</span> tree = <span style="color: #c678dd;">new</span> <span style="color: #61afef;">Tree</span>(root);
+
+<span style="color: #7f848e;">// Render as ASCII</span>
+<span style="color: #c678dd;">const</span> asciiRenderer = <span style="color: #c678dd;">new</span> <span style="color: #61afef;">ASCIIRenderer</span>();
+asciiRenderer.<span style="color: #61afef;">renderToElement</span>(tree, document.<span style="color: #61afef;">getElementById</span>(<span style="color: #98c379;">'output'</span>));
+
+<span style="color: #7f848e;">// Render as directory</span>
+<span style="color: #c678dd;">const</span> dirRenderer = <span style="color: #c678dd;">new</span> <span style="color: #61afef;">DirectoryRenderer</span>();
+dirRenderer.<span style="color: #61afef;">render</span>(tree, document.<span style="color: #61afef;">getElementById</span>(<span style="color: #98c379;">'output'</span>), {
+    onNodeClick: <span style="color: #d19a66;">(</span>node<span style="color: #d19a66;">)</span> <span style="color: #c678dd;">=></span> console.<span style="color: #61afef;">log</span>(<span style="color: #98c379;">'Clicked:'</span>, node.title)
+});
+
+<span style="color: #7f848e;">// Render as drill-down</span>
+<span style="color: #c678dd;">const</span> drillRenderer = <span style="color: #c678dd;">new</span> <span style="color: #61afef;">DrillDownRenderer</span>();
+drillRenderer.<span style="color: #61afef;">render</span>(tree, document.<span style="color: #61afef;">getElementById</span>(<span style="color: #98c379;">'output'</span>));
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { Tree, TreeNode, ASCIIRenderer, DirectoryRenderer, DrillDownRenderer } from './js/tree/index.js';
+
+        // Create a richer sample tree
+        const root = new TreeNode({
+            title: 'My Computer',
+            description: 'Root of the file system',
+            icon: '💻'
+        });
+
+        const documents = new TreeNode({
+            title: 'Documents',
+            description: 'Personal documents folder',
+            icon: '📁'
+        });
+
+        const work = new TreeNode({
+            title: 'Work',
+            description: 'Work-related files',
+            icon: '💼'
+        });
+
+        const projects = new TreeNode({
+            title: 'Projects',
+            description: 'Development projects',
+            icon: '🚀'
+        });
+
+        const pictures = new TreeNode({
+            title: 'Pictures',
+            description: 'Photo collection',
+            icon: '🖼️'
+        });
+
+        const vacation = new TreeNode({
+            title: 'Vacation 2025',
+            description: 'Summer vacation photos',
+            icon: '🏖️'
+        });
+
+        const family = new TreeNode({
+            title: 'Family',
+            description: 'Family photos',
+            icon: '👨‍👩‍👧‍👦'
+        });
+
+        const music = new TreeNode({
+            title: 'Music',
+            description: 'Music library',
+            icon: '🎵'
+        });
+
+        const rock = new TreeNode({
+            title: 'Rock',
+            description: 'Rock music collection',
+            icon: '🎸'
+        });
+
+        const jazz = new TreeNode({
+            title: 'Jazz',
+            description: 'Jazz music collection',
+            icon: '🎺'
+        });
+
+        // Reports
+        const report1 = new TreeNode({
+            title: 'Annual Report 2025.pdf',
+            description: '<strong>Annual Report</strong><br>Financial summary for 2025',
+            icon: '📄'
+        });
+
+        const report2 = new TreeNode({
+            title: 'Q4 Summary.xlsx',
+            description: '<strong>Q4 Summary</strong><br>Quarterly financial data',
+            icon: '📊'
+        });
+
+        const presentation = new TreeNode({
+            title: 'Presentation.pptx',
+            description: '<strong>Company Presentation</strong><br>Main company deck',
+            icon: '📽️'
+        });
+
+        // Project files
+        const project1 = new TreeNode({
+            title: 'Website Redesign',
+            description: '<strong>Website Project</strong><br>New company website design and development',
+            icon: '🌐'
+        });
+
+        const project2 = new TreeNode({
+            title: 'Mobile App',
+            description: '<strong>Mobile App</strong><br>Customer mobile application',
+            icon: '📱'
+        });
+
+        const readme = new TreeNode({
+            title: 'README.md',
+            description: '<strong>Documentation</strong><br>Project documentation',
+            icon: '📝'
+        });
+
+        // Build tree structure
+        work.addChild(report1);
+        work.addChild(report2);
+        work.addChild(presentation);
+
+        project1.addChild(readme);
+        projects.addChild(project1);
+        projects.addChild(project2);
+
+        documents.addChild(work);
+        documents.addChild(projects);
+
+        pictures.addChild(vacation);
+        pictures.addChild(family);
+
+        music.addChild(rock);
+        music.addChild(jazz);
+
+        root.addChild(documents);
+        root.addChild(pictures);
+        root.addChild(music);
+
+        const tree = new Tree(root);
+
+        // Store globally for button handlers
+        window.tree = tree;
+        window.asciiRenderer = new ASCIIRenderer();
+        window.directoryRenderer = new DirectoryRenderer();
+        window.drilldownRenderer = new DrillDownRenderer();
+
+        // ASCII options
+        let asciiOptions = {
+            showIcon: true,
+            showId: false,
+            useUnicode: true
+        };
+
+        window.renderASCII = function() {
+            window.asciiRenderer.renderToElement(
+                tree, 
+                document.getElementById('ascii-output'),
+                asciiOptions
+            );
+        };
+
+        window.toggleASCIIUnicode = function() {
+            asciiOptions.useUnicode = !asciiOptions.useUnicode;
+            window.renderASCII();
+        };
+
+        window.toggleASCIIIcons = function() {
+            asciiOptions.showIcon = !asciiOptions.showIcon;
+            window.renderASCII();
+        };
+
+        // Directory renderer
+        window.directoryRenderer.render(tree, document.getElementById('directory-output'), {
+            showIcon: true,
+            showDescription: true,
+            expandAll: false,
+            onNodeClick: (node) => {
+                const info = document.getElementById('directory-info');
+                info.style.display = 'block';
+                info.innerHTML = `
+                    <strong>Selected:</strong> ${node.icon} ${node.title}<br>
+                    <strong>ID:</strong> ${node.id}<br>
+                    <strong>Children:</strong> ${node.children.length}<br>
+                    <strong>Created:</strong> ${new Date(node.metadata.createdAt).toLocaleString()}
+                `;
+            }
+        });
+
+        window.directoryExpandAll = function() {
+            window.directoryRenderer.expandAll(root);
+        };
+
+        window.directoryCollapseAll = function() {
+            window.directoryRenderer.collapseAll(root);
+        };
+
+        // Drill-down renderer
+        window.drilldownRenderer.render(tree, document.getElementById('drilldown-output'), {
+            showIcon: true,
+            showDescription: true,
+            showBreadcrumb: true,
+            onNodeSelect: (node) => {
+                const info = document.getElementById('drilldown-info');
+                info.style.display = 'block';
+                info.innerHTML = `
+                    <strong>Selected:</strong> ${node.icon} ${node.title}<br>
+                    <strong>Description:</strong> ${node.description || 'No description'}<br>
+                    <strong>Children:</strong> ${node.children.length}<br>
+                    ${node.children.length > 0 ? '<em>Double-click to drill down</em>' : ''}
+                `;
+            },
+            onNodeDoubleClick: (node) => {
+                console.log('Drilling into:', node.title);
+            }
+        });
+
+        window.drilldownGoBack = function() {
+            window.drilldownRenderer.goBack();
+        };
+
+        window.drilldownGoHome = function() {
+            window.drilldownRenderer.goToRoot();
+        };
+
+        // Initial render
+        window.renderASCII();
+    </script>
+</body>
+</html>
