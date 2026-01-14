@@ -217,7 +217,7 @@ class EcosystemGraphBuilder {
             // Create new empty subgraph
             node.subGraph = {
                 id: GraphUtils.generateUUID(),
-                label: `${node.label} Subgraph`,
+                label: `${node.label}`,
                 nodes: [],
                 links: []
             };
