@@ -41,6 +41,7 @@ class EcosystemGraphBuilder {
         this.isBuilderMode = true;
         this._attachBuilderEvents();
         this._updateGraphForBuilder();
+        this._updateLegend();
         console.log('Builder mode enabled');
     }
 
@@ -48,7 +49,13 @@ class EcosystemGraphBuilder {
         this.isBuilderMode = false;
         this._detachBuilderEvents();
         this._removeBuilderElements();
+        this._updateLegend();
         console.log('Builder mode disabled');
+    }
+
+    // Centralized legend update method
+    _updateLegend() {
+        this.groups.renderLegend('#legend', this.isBuilderMode);
     }
 
     _attachBuilderEvents() {
@@ -125,12 +132,14 @@ class EcosystemGraphBuilder {
         const newNode = {
             id: nodeId,
             label: 'New Node',
-            group: 'default',
+            group: '3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f', // Default group UUID
             desc: '',
-            r: this.groups.getRadius('default'),
             x: x,
             y: y
         };
+        
+        // Set radius from group
+        newNode.r = this.groups.getRadius(newNode.group);
 
         currentData.nodes.push(newNode);
         this.graph.render(currentData);
@@ -152,9 +161,11 @@ class EcosystemGraphBuilder {
             Object.assign(node, {
                 label: updatedNode.label,
                 desc: updatedNode.desc,
-                group: updatedNode.group,
-                r: this.groups.getRadius(updatedNode.group)
+                group: updatedNode.group
             });
+            
+            // Update radius from group
+            node.r = this.groups.getRadius(updatedNode.group);
 
             this.graph.render(currentData);
             this._updateGraphForBuilder();
@@ -170,10 +181,8 @@ class EcosystemGraphBuilder {
 
         currentData.nodes.splice(nodeIndex, 1);
 
-        // Remove associated links
-        currentData.links = currentData.links.filter(
-            link => link.source.id !== nodeId && link.target.id !== nodeId
-        );
+        // Remove associated links using graph's helper method
+        this.graph._cleanupNodeLinks(nodeId, currentData);
 
         this.graph.render(currentData);
         this._updateGraphForBuilder();
@@ -272,6 +281,12 @@ class EcosystemGraphBuilder {
             .on('mousedown', (event, d) => {
                 event.stopPropagation();
                 this._startLinkDrag(event, d);
+            })
+            .on('mouseenter', function() {
+                d3.select(this).select('circle').attr('r', 9.2);
+            })
+            .on('mouseleave', function() {
+                d3.select(this).select('circle').attr('r', 8);
             });
 
         this.builderElements.joinIcons.append('circle')
@@ -288,6 +303,14 @@ class EcosystemGraphBuilder {
             .on('click', (event, d) => {
                 event.stopPropagation();
                 this._editNode(d);
+            })
+            .on('mouseenter', function() {
+                d3.select(this).select('circle').attr('r', 10.35);
+                d3.select(this).select('text').style('font-size', '11.5px');
+            })
+            .on('mouseleave', function() {
+                d3.select(this).select('circle').attr('r', 9);
+                d3.select(this).select('text').style('font-size', '10px');
             });
 
         this.builderElements.editIcons.append('circle')
@@ -313,6 +336,14 @@ class EcosystemGraphBuilder {
                 if (confirm(`Delete node "${d.label}"?`)) {
                     this._deleteNode(d.id);
                 }
+            })
+            .on('mouseenter', function() {
+                d3.select(this).select('circle').attr('r', 10.35);
+                d3.select(this).select('text').style('font-size', '16.1px');
+            })
+            .on('mouseleave', function() {
+                d3.select(this).select('circle').attr('r', 9);
+                d3.select(this).select('text').style('font-size', '14px');
             });
 
         this.builderElements.deleteIcons.append('circle')
@@ -336,6 +367,14 @@ class EcosystemGraphBuilder {
             .on('click', (event, d) => {
                 event.stopPropagation();
                 this._handleDrillDown(d);
+            })
+            .on('mouseenter', function() {
+                d3.select(this).select('circle').attr('r', 11.5);
+                d3.select(this).select('text').style('font-size', '11.5px');
+            })
+            .on('mouseleave', function() {
+                d3.select(this).select('circle').attr('r', 10);
+                d3.select(this).select('text').style('font-size', '10px');
             });
 
         this.builderElements.drillDownIcons.append('circle')
@@ -353,11 +392,18 @@ class EcosystemGraphBuilder {
 
         // Add context menu for links
         const links = this.graph.g.selectAll('.icon-interaction-info');
-        links.on('contextmenu', (event, d) => {
-            event.preventDefault();
-            event.stopPropagation();
-            this._showLinkContextMenu(event.pageX, event.pageY, d);
-        });
+        links
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this._editLink(d);
+            })
+            .on('contextmenu', (event, d) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this._showLinkContextMenu(event.pageX, event.pageY, d);
+            });
 
         // Add context menu for nodes
         nodes.on('contextmenu', (event, d) => {
@@ -429,6 +475,54 @@ class EcosystemGraphBuilder {
         });
     }
 
+    // Show modal to add a new group
+    showAddGroupModal() {
+        const modal = document.getElementById('add-group-modal');
+        if (!modal) return;
+        
+        // Reset form
+        document.getElementById('new-group-key').value = '';
+        document.getElementById('new-group-label').value = '';
+        document.getElementById('new-group-color').value = '#3b82f6';
+        document.getElementById('new-group-radius').value = '25';
+        
+        modal.style.display = 'flex';
+    }
+
+    // Hide add group modal
+    hideAddGroupModal() {
+        const modal = document.getElementById('add-group-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Add a new group
+    addNewGroup(key, label, color, radius) {
+        // Validate key
+        if (!key || this.groups.groups.has(key)) {
+            alert('Group key is required and must be unique');
+            return false;
+        }
+        
+        // Add group
+        this.groups.add(key, {
+            label: label || key,
+            color: color || '#3b82f6',
+            radius: parseInt(radius) || 25
+        });
+        
+        // Re-render legend
+        this._updateLegend();
+        
+        // Update settings sidebar
+        if (typeof initializeSettingsSidebar === 'function') {
+            initializeSettingsSidebar();
+        }
+        
+        return true;
+    }
+
     _createLink(sourceNode, targetNode) {
         const currentData = this.graph.getCurrentData();
         const linkId = GraphUtils.generateUUID();
@@ -456,30 +550,113 @@ class EcosystemGraphBuilder {
         }, 100);
     }
 
-    // Export current graph data
-    exportData() {
-        const data = this.graph.rootData;
-        GraphUtils.exportToJSON(data, 'ecosystem_graph_export.json');
+    // Get current metadata
+    _getMetadata() {
+        const title = document.getElementById('graph-title')?.textContent || 'Untitled Graph';
+        const subtitle = document.getElementById('graph-subtitle')?.textContent || '';
+        
+        // Get legend data from groups
+        const legend = {};
+        this.groups.groups.forEach((groupData, key) => {
+            legend[key] = {
+                color: groupData.color,
+                label: groupData.label,
+                radius: groupData.radius
+            };
+        });
+
+        return {
+            title,
+            subtitle,
+            legend,
+            exportDate: new Date().toISOString()
+        };
     }
 
-    // Import graph data
-    importData(callback) {
-        GraphUtils.importFromJSON((data) => {
-            if (data && data.nodes && data.links) {
-                // Validate and load data
-                this.graph.rootData = data;
-                this.graph.viewStack = [];
-                this.graph._hydrateData(data);
-                this.graph.navigateTo(data);
-                
-                if (this.isBuilderMode) {
-                    this._updateGraphForBuilder();
-                }
+    // Apply metadata to current state
+    _applyMetadata(metadata) {
+        if (metadata.title) {
+            const titleEl = document.getElementById('graph-title');
+            if (titleEl) {
+                titleEl.textContent = metadata.title;
+            }
+        }
+        
+        if (metadata.subtitle) {
+            const subtitleEl = document.getElementById('graph-subtitle');
+            if (subtitleEl) {
+                subtitleEl.textContent = metadata.subtitle;
+            }
+        }
+        
+        if (metadata.legend) {
+            // Update groups with imported legend data
+            Object.entries(metadata.legend).forEach(([key, value]) => {
+                this.groups.update(key, value);
+            });
+            this._updateLegend();
+        }
+    }
 
-                if (callback) callback(data);
+    // Generate download-safe filename from title
+    _generateFilename(title) {
+        // Sanitize title for filename
+        const safeName = title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .substring(0, 50) || 'graph';
+        
+        const timestamp = new Date().toISOString().split('T')[0];
+        return `${safeName}_${timestamp}.json`;
+    }
+
+    // Export current graph data with metadata
+    exportData() {
+        const metadata = this._getMetadata();
+        const exportPackage = {
+            metadata,
+            data: this.graph.rootData
+        };
+        
+        const filename = this._generateFilename(metadata.title);
+        GraphUtils.exportToJSON(exportPackage, filename);
+    }
+
+    // Import graph data with metadata
+    importData(callback) {
+        GraphUtils.importFromJSON((importedData) => {
+            let graphData;
+            let metadata = null;
+            
+            // Check if it's a new format with metadata
+            if (importedData.metadata && importedData.data) {
+                metadata = importedData.metadata;
+                graphData = importedData.data;
+            } else if (importedData.nodes && importedData.links) {
+                // Old format without metadata
+                graphData = importedData;
             } else {
                 alert('Invalid graph data format');
+                return;
             }
+            
+            // Apply metadata if present
+            if (metadata) {
+                this._applyMetadata(metadata);
+            }
+            
+            // Validate and load graph data
+            this.graph.rootData = graphData;
+            this.graph.viewStack = [];
+            this.graph._hydrateData(graphData);
+            this.graph.navigateTo(graphData);
+            
+            if (this.isBuilderMode) {
+                this._updateGraphForBuilder();
+            }
+
+            if (callback) callback(graphData, metadata);
         });
     }
 }

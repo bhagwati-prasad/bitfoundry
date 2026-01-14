@@ -10,21 +10,25 @@ class EntityGroups {
         this._ensureDefault();
     }
 
-    renderLegend(containerSelector) {
+    renderLegend(containerSelector, builderMode = false) {
         if (containerSelector) {
             this.container = typeof containerSelector === 'string'
                 ? document.querySelector(containerSelector)
                 : containerSelector;
         }
+        this.builderMode = builderMode;
         this._render();
     }
 
-    //props - { color, label, radius }
+    // props - { id, title, color, radius, description } or legacy { color, label, radius }
     add(key, props) {
         this.groups.set(key, {
+            id: props.id || key,
             color: props.color || '#94a3b8',
-            label: props.label || this._formatLabel(key),
-            radius: props.radius || 20 // Default radius setting
+            label: props.title || props.label || this._formatLabel(key),
+            title: props.title || props.label || this._formatLabel(key),
+            radius: props.radius || 20,
+            description: props.description || ''
         });
         this._render();
     }
@@ -32,18 +36,26 @@ class EntityGroups {
     update(key, newProps) {
         if (!this.groups.has(key)) return;
         const current = this.groups.get(key);
-        this.groups.set(key, { ...current, ...newProps });
+        const updated = { ...current, ...newProps };
+        // Keep title and label in sync
+        if (newProps.title) updated.label = newProps.title;
+        if (newProps.label) updated.title = newProps.label;
+        this.groups.set(key, updated);
         this._render();
     }
 
     remove(key) {
-        if (key === 'default') return;
+        if (key === '3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f') return; // Prevent default group deletion
         this.groups.delete(key);
         this._render();
     }
 
     get(key) {
-        return this.groups.get(key) || this.groups.get('default');
+        if (this.groups.has(key)) {
+            return this.groups.get(key);
+        }
+        // Fallback to default group by UUID
+        return this.groups.get('3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f');
     }
 
     getColor(key) { return this.get(key).color; }
@@ -51,8 +63,16 @@ class EntityGroups {
     getRadius(key) { return this.get(key).radius; }
 
     _ensureDefault() {
-        if (!this.groups.has('default')) {
-            this.groups.set('default', { color: '#000000', label: 'Default', radius: 15 });
+        // Check if default exists by UUID
+        if (!this.groups.has('3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f')) {
+            this.groups.set('3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f', { 
+                id: '3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f',
+                color: '#000000', 
+                label: 'Default',
+                title: 'Default',
+                radius: 15,
+                description: 'Default group for uncategorized entities'
+            });
         }
     }
 
@@ -66,9 +86,23 @@ class EntityGroups {
         this.container.className = 'legend-container';
         const fragment = document.createDocumentFragment();
 
+        // Add 'Add Group' button in builder mode (leftmost position)
+        if (this.builderMode) {
+            const addBtn = document.createElement('div');
+            addBtn.className = 'legend-add-group-btn';
+            addBtn.title = 'Add new group';
+            addBtn.innerHTML = '<span class="add-icon">+</span><span>Add Group</span>';
+            addBtn.addEventListener('click', () => {
+                if (window.builder && typeof window.builder.showAddGroupModal === 'function') {
+                    window.builder.showAddGroupModal();
+                }
+            });
+            fragment.appendChild(addBtn);
+        }
+
         this.groups.forEach((value, key) => {
             const item = document.createElement('div');
-            item.style.cssText = 'display: flex; align-items: center; margin-right: 15px; margin-bottom: 5px; font-size: 12px; font-family: sans-serif; cursor: default;';
+            item.style.cssText = 'display: flex; align-items: center; margin-right: 15px; font-size: 12px; font-family: sans-serif; cursor: default;';
             item.title = `Group: ${key}`;
 
             const swatch = document.createElement('span');

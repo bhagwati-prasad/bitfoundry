@@ -19,6 +19,15 @@ class EcosystemGraph {
 
         this.rootData = data;
         this.groups = entityGroups instanceof EntityGroups ? entityGroups : new EntityGroups();
+        
+        // If data has groups, load them into EntityGroups
+        if (data.groups) {
+            this.groups.groups.clear();
+            Object.entries(data.groups).forEach(([key, value]) => {
+                this.groups.add(key, value);
+            });
+        }
+        
         this.viewStack = [];
         this.simulation = null;
 
@@ -61,7 +70,7 @@ class EcosystemGraph {
         if (data.links) {
             data.links.forEach(link => {
                 if (!link.id) {
-                    link.id = typeof GraphUtils !== 'undefined' ? GraphUtils.generateUUID() : 'link-' + Date.now() + '-' + Math.random();
+                    link.id = GraphUtils.generateUUID();
                 }
             });
         }
@@ -73,7 +82,7 @@ class EcosystemGraph {
 
     addNode(props) {
         const currentData = this.getCurrentData();
-        const groupKey = props.group || 'default';
+        const groupKey = props.group || '3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f'; // Default group UUID
 
         if (currentData.nodes.find(n => n.id === props.id)) return;
 
@@ -83,10 +92,12 @@ class EcosystemGraph {
             group: groupKey,
             desc: props.desc || "",
             subGraph: props.subGraph || null,
-            r: this.groups.getRadius(groupKey),
             x: this.config.width / 2,
             y: this.config.height / 2
         };
+        
+        // Set radius from group
+        newNode.r = this.groups.getRadius(groupKey);
 
         currentData.nodes.push(newNode);
         this.render(currentData);
@@ -100,8 +111,7 @@ class EcosystemGraph {
 
         if (!s || !t) return;
 
-        // Generate UUID for link if not provided
-        const linkId = typeof GraphUtils !== 'undefined' ? GraphUtils.generateUUID() : 'link-' + Date.now();
+        const linkId = GraphUtils.generateUUID();
         currentData.links.push({ id: linkId, source: sourceId, target: targetId, type, label: "Link" });
         this.render(currentData);
     }
@@ -124,10 +134,15 @@ class EcosystemGraph {
         if (index === -1) return;
 
         currentData.nodes.splice(index, 1);
-        currentData.links = currentData.links.filter(
+        this._cleanupNodeLinks(nodeId, currentData);
+        this.render(currentData);
+    }
+
+    // Helper method to cleanup links when a node is removed
+    _cleanupNodeLinks(nodeId, data) {
+        data.links = data.links.filter(
             l => l.source.id !== nodeId && l.target.id !== nodeId
         );
-        this.render(currentData);
     }
 
     removeLink(linkId) {
