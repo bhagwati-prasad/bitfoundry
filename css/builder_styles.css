@@ -1,5 +1,4 @@
 /* Graph Builder Styles */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
     box-sizing: border-box;
@@ -13,6 +12,50 @@ body {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
+}
+
+/* Disable text selection in builder mode */
+body.builder-mode-active {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Floating Add Node Button */
+.floating-add-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    font-size: 24px;
+    font-weight: 300;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+}
+
+.floating-add-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    background: var(--color-primary-hover);
+}
+
+.floating-add-btn:active {
+    transform: scale(0.95);
+}
+
+.floating-add-btn span {
+    pointer-events: none;
 }
 
 /* ==================== Left Sidebar ==================== */
@@ -44,7 +87,7 @@ body {
     border-bottom: 1px solid var(--color-border-base);
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: start;
     transition: background var(--transition-base);
 }
 

@@ -8,6 +8,7 @@ class EcosystemGraph {
             chargeStrength: -800,
             linkDistance: 160,
             collideStrength: 1,
+            enforceBounds: true, // Keep nodes within viewport bounds
             // New Callbacks Config
             callbacks: {
                 onEntityClick: null, // Click on Node "i" icon
@@ -273,6 +274,15 @@ class EcosystemGraph {
 
         // Tick
         this.simulation.on("tick", () => {
+            // Enforce bounds to keep nodes within viewport
+            if (this.config.enforceBounds) {
+                nodes.forEach(d => {
+                    const padding = d.r || 20; // Use node radius or default padding
+                    d.x = Math.max(padding, Math.min(this.config.width - padding, d.x));
+                    d.y = Math.max(padding, Math.min(this.config.height - padding, d.y));
+                });
+            }
+
             link.attr("d", d => {
                 const dx = d.target.x - d.source.x;
                 const dy = d.target.y - d.source.y;

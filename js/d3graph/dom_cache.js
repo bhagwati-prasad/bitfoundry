@@ -38,7 +38,6 @@ class DOMCache {
         this.set('newGraphDescription', document.getElementById('new-graph-description'));
         
         // Add group modal elements
-        this.set('newGroupKey', document.getElementById('new-group-key'));
         this.set('newGroupLabel', document.getElementById('new-group-label'));
         this.set('newGroupColor', document.getElementById('new-group-color'));
         this.set('newGroupRadius', document.getElementById('new-group-radius'));

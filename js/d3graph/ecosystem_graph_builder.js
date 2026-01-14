@@ -39,17 +39,33 @@ class EcosystemGraphBuilder {
 
     enableBuilderMode() {
         this.isBuilderMode = true;
+        document.body.classList.add('builder-mode-active');
         this._attachBuilderEvents();
         this._updateGraphForBuilder();
         this._updateLegend();
+        
+        // Show floating add node button
+        const floatingBtn = document.getElementById('floating-add-node-btn');
+        if (floatingBtn) {
+            floatingBtn.style.display = 'flex';
+        }
+        
         console.log('Builder mode enabled');
     }
 
     disableBuilderMode() {
         this.isBuilderMode = false;
+        document.body.classList.remove('builder-mode-active');
         this._detachBuilderEvents();
         this._removeBuilderElements();
         this._updateLegend();
+        
+        // Hide floating add node button
+        const floatingBtn = document.getElementById('floating-add-node-btn');
+        if (floatingBtn) {
+            floatingBtn.style.display = 'none';
+        }
+        
         console.log('Builder mode disabled');
     }
 
@@ -268,6 +284,18 @@ class EcosystemGraphBuilder {
             this.dragState.line.remove();
             this.dragState.line = null;
         }
+        
+        // Restore link icons to info icon in view mode
+        const links = this.graph.g.selectAll('.icon-interaction-info');
+        links.select('text')
+            .text('i')
+            .attr('dy', '3.5px');
+        
+        links.select('circle')
+            .attr('stroke', '#f97316');
+        
+        links.select('text')
+            .attr('fill', '#f97316');
     }
 
     _addBuilderIcons() {
@@ -279,6 +307,7 @@ class EcosystemGraphBuilder {
             .attr('transform', d => `translate(0, ${d.r})`)
             .style('cursor', 'crosshair')
             .on('mousedown', (event, d) => {
+                event.preventDefault();
                 event.stopPropagation();
                 this._startLinkDrag(event, d);
             })
@@ -390,19 +419,38 @@ class EcosystemGraphBuilder {
             .style('font-size', '10px')
             .style('pointer-events', 'none');
 
-        // Add context menu for links
+        // Add context menu for links in builder mode
         const links = this.graph.g.selectAll('.icon-interaction-info');
+        
+        // Change icon to pencil in builder mode to show it's editable
+        links.select('text')
+            .text('✏')
+            .attr('dy', '4px');
+        
+        links.select('circle')
+            .attr('stroke', '#f59e0b');
+        
+        links.select('text')
+            .attr('fill', '#f59e0b');
+        
         links
             .style('cursor', 'pointer')
             .on('click', (event, d) => {
-                event.preventDefault();
-                event.stopPropagation();
-                this._editLink(d);
+                // Only allow editing in builder mode
+                if (this.isBuilderMode) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this._editLink(d);
+                }
+                // In view mode, the original onFlowClick callback will handle it
             })
             .on('contextmenu', (event, d) => {
-                event.preventDefault();
-                event.stopPropagation();
-                this._showLinkContextMenu(event.pageX, event.pageY, d);
+                // Only show context menu in builder mode
+                if (this.isBuilderMode) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this._showLinkContextMenu(event.pageX, event.pageY, d);
+                }
             });
 
         // Add context menu for nodes
@@ -416,6 +464,8 @@ class EcosystemGraphBuilder {
     _startLinkDrag(event, sourceNode) {
         this.dragState.active = true;
         this.dragState.sourceNode = sourceNode;
+
+        console.log('Starting link drag from node:', sourceNode.label, { x: sourceNode.x, y: sourceNode.y });
 
         // Create temporary line
         this.dragState.line = this.graph.g.append('line')
@@ -442,14 +492,19 @@ class EcosystemGraphBuilder {
         const onMouseUp = (e) => {
             if (!this.dragState.active) return;
 
-            const [x, y] = d3.pointer(e, this.graph.g.node());
-            const targetNode = this._findNodeAtPosition(x, y);
+            // Find the target node by checking what element is under the cursor
+            const targetNode = this._findNodeAtMousePosition(e.clientX, e.clientY);
+
+            console.log('Link drag ended:', { targetNode, sourceNode });
 
             if (targetNode && targetNode.id !== sourceNode.id) {
+                console.log('Valid target found, creating link');
                 // Validate no self-loop
                 if (GraphUtils.validateNoSelfLoop(sourceNode.id, targetNode.id)) {
                     this._createLink(sourceNode, targetNode);
                 }
+            } else {
+                console.log('No valid target found');
             }
 
             // Cleanup
@@ -460,19 +515,38 @@ class EcosystemGraphBuilder {
             this.dragState.sourceNode = null;
             this.dragState.line = null;
 
-            this.graph.svg.on('mousemove', null);
-            this.graph.svg.on('mouseup', null);
+            d3.select(document).on('mousemove.linkdrag', null);
+            d3.select(document).on('mouseup.linkdrag', null);
         };
 
-        this.graph.svg.on('mousemove', onMouseMove);
-        this.graph.svg.on('mouseup', onMouseUp);
+        d3.select(document).on('mousemove.linkdrag', onMouseMove);
+        d3.select(document).on('mouseup.linkdrag', onMouseUp);
     }
 
-    _findNodeAtPosition(x, y) {
-        const currentData = this.graph.getCurrentData();
-        return currentData.nodes.find(node => {
-            return GraphUtils.isWithinDistance(x, y, node.x, node.y, node.r + this.config.linkSnapDistance);
-        });
+    _findNodeAtMousePosition(clientX, clientY) {
+        // Temporarily hide the drag line so elementFromPoint can see through it
+        if (this.dragState.line) {
+            this.dragState.line.style('pointer-events', 'none');
+        }
+
+        // Get the element under the mouse cursor
+        const element = document.elementFromPoint(clientX, clientY);
+        
+        // Restore drag line pointer events
+        if (this.dragState.line) {
+            this.dragState.line.style('pointer-events', null);
+        }
+
+        if (!element) return null;
+
+        // Find the closest .node group element
+        const nodeElement = element.closest('.node');
+        if (!nodeElement) return null;
+
+        // Get the node data from D3
+        const nodeData = d3.select(nodeElement).datum();
+        console.log('Found node via DOM:', nodeData?.label);
+        return nodeData;
     }
 
     // Show modal to add a new group
@@ -481,7 +555,6 @@ class EcosystemGraphBuilder {
         if (!modal) return;
         
         // Reset form
-        document.getElementById('new-group-key').value = '';
         document.getElementById('new-group-label').value = '';
         document.getElementById('new-group-color').value = '#3b82f6';
         document.getElementById('new-group-radius').value = '25';
@@ -498,18 +571,18 @@ class EcosystemGraphBuilder {
     }
 
     // Add a new group
-    addNewGroup(key, label, color, radius) {
-        // Validate key
-        if (!key || this.groups.groups.has(key)) {
-            alert('Group key is required and must be unique');
-            return false;
-        }
+    addNewGroup(label, color, radius) {
+        // Generate UUID for the new group
+        const groupId = GraphUtils.generateUUID();
         
         // Add group
-        this.groups.add(key, {
-            label: label || key,
+        this.groups.add(groupId, {
+            id: groupId,
+            title: label,
+            label: label,
             color: color || '#3b82f6',
-            radius: parseInt(radius) || 25
+            radius: parseInt(radius) || 25,
+            description: ''
         });
         
         // Re-render legend
