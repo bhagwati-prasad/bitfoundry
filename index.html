@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBPS Graph Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="stylesheet" href="./css/theme.css">
+    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/builder_styles.css">
+</head>
+
+<body>
+
+    <!-- Left Sidebar -->
+    <div id="left-sidebar" class="left-sidebar">
+        <div class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">
+            <span class="toggle-icon">☰</span>
+        </div>
+        
+        <nav class="sidebar-menu">
+            <!-- Graphs Menu Item -->
+            <div class="menu-item" id="graphs-menu">
+                <div class="menu-item-header">
+                    <div class="menu-item-main">
+                        <span class="menu-icon">📊</span>
+                        <span class="menu-label">Graphs</span>
+                    </div>
+                    <div class="menu-actions">
+                        <button class="icon-btn" id="add-graph-btn" title="Add new graph">
+                            <span>+</span>
+                        </button>
+                        <button class="icon-btn expand-btn" id="graphs-expand-btn" title="Expand">
+                            <span>▼</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="menu-item-content" id="graphs-list">
+                    <!-- Graphs will be populated here -->
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div id="ui-layer">
+        <div class="header-box">
+            <div class="top-row">
+                <div>
+                    <h1 id="graph-title" contenteditable="true" spellcheck="false" title="Click to edit"> </h1>
+                    <p id="graph-subtitle" class="subtitle" contenteditable="true" spellcheck="false" title="Click to edit"></p>
+                </div>
+                <div class="header-actions">
+                    <!-- Save Button (visible only in builder mode) -->
+                    <button id="save-graph-btn" class="btn btn-primary builder-only" title="Save current graph" style="display: none;">
+                        💾 Save
+                    </button>
+                    
+                    <!-- Mode Toggle -->
+                    <div class="mode-toggle">
+                        <button id="viewer-mode-btn" class="mode-btn active">
+                            <span>👁️</span> View
+                        </button>
+                        <button id="builder-mode-btn" class="mode-btn">
+                            <span>🔧</span> Build
+                        </button>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="action-buttons">
+                        <button id="import-btn" class="btn btn-secondary" title="Import JSON">
+                            📥 Import
+                        </button>
+                        <button id="export-btn" class="btn btn-secondary" title="Export JSON">
+                            📤 Export
+                        </button>
+                        <button id="settings-btn" class="btn btn-secondary" title="Settings">
+                            ⚙️ Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-row">
+                <div class="breadcrumbs" id="breadcrumbs"></div>
+                <div class="legend-panel" id="legend"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Sidebar -->
+    <div id="settings-sidebar" class="settings-sidebar">
+        <div class="settings-header">
+            <h3>Settings</h3>
+            <button id="close-settings-btn" class="close-btn">×</button>
+        </div>
+        <div class="settings-content" id="settings-content">
+            <!-- Will be populated dynamically -->
+        </div>
+    </div>
+
+    <div id="graph-container"></div>
+
+    <!-- Floating Add Node Button -->
+    <button id="floating-add-node-btn" class="floating-add-btn" style="display: none;" title="Add new node">
+        <span>+</span>
+    </button>
+
+    <div id="modal"></div>
+
+    <!-- Add Group Modal -->
+    <div id="add-group-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Add New Group</h3>
+                <button class="close-btn" onclick="builder.hideAddGroupModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="new-group-label">Group Name *</label>
+                    <input type="text" id="new-group-label" placeholder="e.g., Payment System" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-group-color">Color</label>
+                    <input type="color" id="new-group-color" value="#3b82f6">
+                </div>
+                <div class="form-group">
+                    <label for="new-group-radius">Default Radius</label>
+                    <input type="number" id="new-group-radius" min="10" max="100" value="25">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="builder.hideAddGroupModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="handleAddGroup()">Add Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Graph Modal -->
+    <div id="add-graph-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Create New Graph</h3>
+                <button class="close-btn" onclick="hideAddGraphModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="new-graph-name">Graph Name *</label>
+                    <input type="text" id="new-graph-name" placeholder="e.g., Payment System Architecture" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-graph-description">Description</label>
+                    <input type="text" id="new-graph-description" placeholder="Optional description">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideAddGraphModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="handleAddGraph()">Create Graph</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="./js/d3graph/dom_cache.js"></script>
+    <script type="text/javascript" src="./js/d3graph/ecosystem_data.js"></script>
+    <script type="text/javascript" src="./js/lib/storage.js"></script>
+    <script type="text/javascript" src="./js/d3graph/utils.js"></script>
+    <script type="text/javascript" src="./js/d3graph/ecosystem_graph_entities.js"></script>
+    <script type="text/javascript" src="./js/d3graph/graph_modal.js"></script>
+    <script type="text/javascript" src="./js/lib/context_menu.js"></script>
+    <script type="text/javascript" src="./js/d3graph/property_editor.js"></script>
+    <script type="text/javascript" src="./js/d3graph/ecosystem_graph.js"></script>
+    <script type="text/javascript" src="./js/d3graph/ecosystem_graph_builder.js"></script>
+
+    <script>
+        let graph;
+        let builder;
+        let myGroups;
+        let modalHandler;
+        let currentGraphId = null;
+        let storage = new Storage('local');
+        
+        // Default groups configuration - only default group for empty state
+        const DEFAULT_GROUPS = {
+            "3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f": { 
+                id: "3f4e5d6c-7b8a-49f0-ae1d-2c3b4a5e6d7f",
+                title: "Default", 
+                color: "#000000", 
+                radius: 40,
+                description: "Default group for uncategorized entities"
+            }
+        };
+
+        // Graph Management
+        const GraphManager = {
+            graphListKey: 'graphList',
+            
+            async getGraphList() {
+                return await storage.get(this.graphListKey, []);
+            },
+            
+            async getAllGraphs() {
+                const graphList = await this.getGraphList();
+                return graphList;
+            },
+            
+            async getGraph(id) {
+                const graphData = await storage.get(`graph_${id}`);
+                return graphData;
+            },
+            
+            async saveGraph(id, data) {
+                const title = domCache.get('graphTitle')?.textContent || 'Untitled Graph';
+                const subtitle = domCache.get('graphSubtitle')?.textContent || '';
+                
+                // Get current groups configuration with IDs
+                const groupsConfig = {};
+                myGroups.groups.forEach((groupData, key) => {
+                    groupsConfig[key] = {
+                        id: key,
+                        title: groupData.label || groupData.title,
+                        color: groupData.color,
+                        radius: groupData.radius,
+                        description: groupData.description || ''
+                    };
+                });
+                
+                // Ensure data has groups property
+                const dataWithGroups = {
+                    ...data,
+                    groups: groupsConfig
+                };
+                
+                const graphData = {
+                    id,
+                    name: title,
+                    description: subtitle,
+                    data: dataWithGroups,
+                    groups: groupsConfig, // Keep for backward compatibility
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // Save the full graph data
+                await storage.set(`graph_${id}`, graphData);
+                
+                // Update graph list entry
+                const graphList = await this.getGraphList();
+                const index = graphList.findIndex(g => g.id === id);
+                const listEntry = {
+                    id,
+                    name: title,
+                    description: subtitle,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                if (index >= 0) {
+                    graphList[index] = listEntry;
+                } else {
+                    listEntry.createdAt = new Date().toISOString();
+                    graphList.push(listEntry);
+                }
+                
+                await storage.set(this.graphListKey, graphList);
+                await this.renderGraphsList();
+            },
+            
+            async createGraph(name, description = '') {
+                const id = GraphUtils.generateUUID();
+                const now = new Date().toISOString();
+                
+                const graphData = {
+                    id,
+                    name,
+                    description,
+                    data: {
+                        id: GraphUtils.generateUUID(),
+                        label: name,
+                        nodes: [],
+                        links: [],
+                        groups: { ...DEFAULT_GROUPS }
+                    },
+                    groups: { ...DEFAULT_GROUPS }, // Only default group
+                    createdAt: now,
+                    updatedAt: now
+                };
+                
+                // Save full graph data
+                await storage.set(`graph_${id}`, graphData);
+                
+                // Add to graph list
+                const graphList = await this.getGraphList();
+                graphList.push({
+                    id,
+                    name,
+                    description,
+                    createdAt: now,
+                    updatedAt: now
+                });
+                await storage.set(this.graphListKey, graphList);
+                
+                await this.renderGraphsList();
+                return id;
+            },
+            
+            async deleteGraph(id) {
+                if (!confirm('Are you sure you want to delete this graph?')) return;
+                
+                // Delete graph data
+                await storage.delete(`graph_${id}`);
+                
+                // Remove from graph list
+                const graphList = await this.getGraphList();
+                const filtered = graphList.filter(g => g.id !== id);
+                await storage.set(this.graphListKey, filtered);
+                
+                if (currentGraphId === id) {
+                    const remaining = await this.getGraphList();
+                    if (remaining.length > 0) {
+                        await this.loadGraph(remaining[0].id);
+                    } else {
+                        loadEmptyState();
+                    }
+                }
+                
+                await this.renderGraphsList();
+            },
+            
+            async loadGraph(id) {
+                const graphData = await this.getGraph(id);
+                if (!graphData) return;
+                
+                currentGraphId = id;
+                
+                // Update UI - sync with graph data
+                domCache.get('graphTitle').textContent = graphData.name;
+                domCache.get('graphSubtitle').textContent = graphData.description;
+                
+                // Restore groups configuration - use data.groups if available (new format)
+                const groupsToLoad = graphData.data?.groups || graphData.groups || DEFAULT_GROUPS;
+                myGroups.groups.clear();
+                Object.entries(groupsToLoad).forEach(([key, value]) => {
+                    myGroups.add(key, {
+                        color: value.color,
+                        label: value.title || value.label,
+                        radius: value.radius,
+                        description: value.description || ''
+                    });
+                });
+                myGroups.renderLegend('#legend');
+                
+                // Load graph data
+                graph.rootData = graphData.data;
+                graph.viewStack = [];
+                graph._hydrateData(graphData.data);
+                graph.navigateTo(graphData.data);
+                
+                if (builder.isBuilderMode) {
+                    builder._updateGraphForBuilder();
+                }
+                
+                await this.renderGraphsList();
+            },
+            
+            async renderGraphsList() {
+                const container = domCache.get('graphsList');
+                const graphs = await this.getGraphList();
+                
+                if (graphs.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No graphs yet.<br>Click + to create one.</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                graphs.forEach(g => {
+                    const item = document.createElement('div');
+                    item.className = 'graph-item' + (g.id === currentGraphId ? ' active' : '');
+                    item.innerHTML = `
+                        <span class="graph-item-name" title="${g.name}">${g.name}</span>
+                        <div class="graph-item-actions">
+                            <button class="graph-action-btn" data-graph-id="${g.id}" title="Delete">
+                                <span>×</span>
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Delete button handler
+                    const deleteBtn = item.querySelector('.graph-action-btn');
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        GraphManager.deleteGraph(g.id);
+                    });
+                    
+                    // Load graph handler
+                    item.addEventListener('click', (e) => {
+                        if (!e.target.closest('.graph-action-btn')) {
+                            GraphManager.loadGraph(g.id);
+                        }
+                    });
+                    
+                    container.appendChild(item);
+                });
+            },
+            
+            async importGraph(graphData, metadata) {
+                // Check if graph has a UUID
+                let graphId = graphData.id || (metadata && metadata.id);
+                
+                // If no UUID or UUID already exists, generate a new one
+                if (!graphId) {
+                    graphId = GraphUtils.generateUUID();
+                } else {
+                    // Check if UUID already exists
+                    const existing = await this.getGraph(graphId);
+                    if (existing) {
+                        // UUID exists, generate new one
+                        graphId = GraphUtils.generateUUID();
+                    }
+                }
+                
+                const title = (metadata && metadata.title) || graphData.label || 'Imported Graph';
+                const description = (metadata && metadata.subtitle) || (metadata && metadata.description) || '';
+                
+                // Get groups from the imported data or metadata, fallback to DEFAULT_GROUPS
+                let groups = graphData.groups || (metadata && metadata.legend) || DEFAULT_GROUPS;
+                
+                const now = new Date().toISOString();
+                const newGraphData = {
+                    id: graphId,
+                    name: title,
+                    description: description,
+                    data: graphData,
+                    groups: groups,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                
+                // Save full graph data
+                await storage.set(`graph_${graphId}`, newGraphData);
+                
+                // Add to graph list
+                const graphList = await this.getGraphList();
+                graphList.push({
+                    id: graphId,
+                    name: title,
+                    description: description,
+                    createdAt: now,
+                    updatedAt: now
+                });
+                await storage.set(this.graphListKey, graphList);
+                
+                await this.renderGraphsList();
+                return graphId;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize DOM cache
+            domCache.init();
+            
+            // Initialize groups with defaults
+            myGroups = new EntityGroups(DEFAULT_GROUPS);
+            myGroups.renderLegend("#legend");
+
+            // Initialize modal
+            modalHandler = new GraphModal("#modal");
+
+            // Initialize graph with empty data structure
+            const emptyData = {
+                id: 'empty',
+                label: 'Empty Graph',
+                nodes: [],
+                links: [],
+                groups: DEFAULT_GROUPS
+            };
+            
+            graph = new EcosystemGraph(emptyData, myGroups, {
+                containerId: "#graph-container",
+                callbacks: {
+                    onEntityClick: (data) => modalHandler.open(data, 'entity'),
+                    onFlowClick: (data) => modalHandler.open(data, 'interaction')
+                }
+            });
+
+            // Initialize builder
+            builder = new EcosystemGraphBuilder(graph, myGroups);
+            
+            // Expose builder globally for modal access
+            window.builder = builder;
+            
+            // Setup left sidebar
+            setupLeftSidebar();
+            
+            // Initialize graphs list and load last graph if available
+            (async () => {
+                await GraphManager.renderGraphsList();
+                
+                // Load the first graph from list, or show empty state with placeholders
+                const graphList = await GraphManager.getGraphList();
+                if (graphList.length > 0) {
+                    await GraphManager.loadGraph(graphList[0].id);
+                } else {
+                    loadEmptyState();
+                }
+            })();
+            
+            // Auto-save current graph periodically
+            setInterval(async () => {
+                if (currentGraphId && graph.rootData) {
+                    await GraphManager.saveGraph(currentGraphId, graph.rootData);
+                }
+            }, 30000); // Auto-save every 30 seconds
+
+            // Setup mode toggle
+            const viewerBtn = domCache.get('viewerBtn');
+            const builderBtn = domCache.get('builderBtn');
+            const saveBtn = domCache.get('saveBtn');
+
+            viewerBtn.addEventListener('click', () => {
+                builder.disableBuilderMode();
+                viewerBtn.classList.add('active');
+                builderBtn.classList.remove('active');
+                saveBtn.style.display = 'none';
+            });
+
+            builderBtn.addEventListener('click', () => {
+                builder.enableBuilderMode();
+                builderBtn.classList.add('active');
+                viewerBtn.classList.remove('active');
+                saveBtn.style.display = 'inline-flex';
+            });
+
+            // Setup floating add node button
+            const floatingAddBtn = document.getElementById('floating-add-node-btn');
+            if (floatingAddBtn) {
+                floatingAddBtn.addEventListener('click', () => {
+                    // Create node at center of viewport
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    // Convert screen coordinates to SVG coordinates
+                    const svg = graph.svg.node();
+                    const pt = svg.createSVGPoint();
+                    pt.x = centerX;
+                    pt.y = centerY;
+                    const svgCoords = pt.matrixTransform(graph.g.node().getScreenCTM().inverse());
+                    builder._createNewNode(svgCoords.x, svgCoords.y);
+                });
+            }
+
+            // Setup Save button
+            saveBtn.addEventListener('click', () => {
+                handleSaveGraph();
+            });
+
+            // Setup action buttons
+            domCache.get('importBtn').addEventListener('click', () => {
+                builder.importData(async (data, metadata) => {
+                    console.log('Data imported successfully');
+                    // Save imported graph to storage
+                    const newGraphId = await GraphManager.importGraph(data, metadata);
+                    await GraphManager.loadGraph(newGraphId);
+                });
+            });
+
+            domCache.get('exportBtn').addEventListener('click', () => {
+                builder.exportData();
+            });
+
+            domCache.get('settingsBtn').addEventListener('click', () => {
+                openSettingsSidebar();
+            });
+
+            domCache.get('closeSettingsBtn').addEventListener('click', () => {
+                closeSettingsSidebar();
+            });
+
+            // Initialize settings sidebar
+            initializeSettingsSidebar();
+
+            // Make title and subtitle editable
+            setupEditableHeaders();
+        });
+
+        function openSettingsSidebar() {
+            domCache.get('settingsSidebar').classList.add('open');
+        }
+
+        function closeSettingsSidebar() {
+            domCache.get('settingsSidebar').classList.remove('open');
+        }
+
+        function initializeSettingsSidebar() {
+            const settingsContent = domCache.get('settingsContent');
+            settingsContent.innerHTML = '';
+
+            // Add groups settings section
+            const groupsSection = document.createElement('div');
+            groupsSection.className = 'settings-section';
+            groupsSection.innerHTML = '<h4 class="settings-section-title">Entity Groups</h4>';
+            settingsContent.appendChild(groupsSection);
+
+            myGroups.groups.forEach((groupData, key) => {
+                const groupItem = document.createElement('div');
+                groupItem.className = 'settings-group-item';
+
+                const header = document.createElement('div');
+                header.className = 'settings-group-header';
+
+                // Create color picker wrapper
+                const colorSwatchWrapper = document.createElement('div');
+                colorSwatchWrapper.className = 'settings-color-swatch-wrapper';
+                colorSwatchWrapper.title = 'Click to change color';
+
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.value = groupData.color;
+                colorInput.className = 'settings-color-input';
+                colorInput.addEventListener('input', (e) => {
+                    // Update swatch in real-time as user picks color
+                    colorSwatch.style.backgroundColor = e.target.value;
+                });
+                colorInput.addEventListener('change', (e) => {
+                    const newColor = e.target.value;
+                    myGroups.update(key, { color: newColor });
+                    myGroups.renderLegend('#legend', builder.isBuilderMode);
+                    
+                    // Re-render graph to update node colors
+                    const currentData = graph.getCurrentData();
+                    graph.render(currentData);
+                    if (builder.isBuilderMode) {
+                        builder._updateGraphForBuilder();
+                    }
+                });
+
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'settings-color-swatch';
+                colorSwatch.style.backgroundColor = groupData.color;
+
+                colorSwatchWrapper.appendChild(colorInput);
+                colorSwatchWrapper.appendChild(colorSwatch);
+
+                // Make label editable
+                const labelInput = document.createElement('input');
+                labelInput.type = 'text';
+                labelInput.value = groupData.label;
+                labelInput.className = 'settings-group-label-input';
+                labelInput.addEventListener('change', (e) => {
+                    const newLabel = e.target.value.trim();
+                    if (newLabel) {
+                        myGroups.update(key, { label: newLabel });
+                        myGroups.renderLegend('#legend', builder.isBuilderMode);
+                    } else {
+                        e.target.value = groupData.label; // Revert if empty
+                    }
+                });
+                labelInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.target.blur();
+                    }
+                });
+
+                header.appendChild(colorSwatchWrapper);
+                header.appendChild(labelInput);
+
+                const radiusControl = document.createElement('div');
+                radiusControl.className = 'settings-radius-control';
+
+                const radiusLabel = document.createElement('label');
+                radiusLabel.textContent = 'Default Radius:';
+
+                const radiusInput = document.createElement('input');
+                radiusInput.type = 'number';
+                radiusInput.min = '10';
+                radiusInput.max = '100';
+                radiusInput.value = groupData.radius;
+                radiusInput.className = 'settings-radius-input';
+
+                radiusInput.addEventListener('change', (e) => {
+                    const newRadius = parseInt(e.target.value);
+                    myGroups.update(key, { radius: newRadius });
+                    
+                    // Update all nodes of this group in current view
+                    const currentData = graph.getCurrentData();
+                    currentData.nodes.forEach(node => {
+                        if (node.group === key) {
+                            node.r = newRadius;
+                        }
+                    });
+                    graph.render(currentData);
+                    if (builder.isBuilderMode) {
+                        builder._updateGraphForBuilder();
+                    }
+                });
+
+                radiusControl.appendChild(radiusLabel);
+                radiusControl.appendChild(radiusInput);
+
+                groupItem.appendChild(header);
+                groupItem.appendChild(radiusControl);
+
+                groupsSection.appendChild(groupItem);
+            });
+        }
+
+        function incrementVersion(type) {
+            const versionInput = document.getElementById('version-input');
+            const currentVersion = versionInput.value;
+            const parts = currentVersion.split('.').map(Number);
+            
+            if (parts.length !== 3 || parts.some(isNaN)) {
+                alert('Invalid version format');
+                return;
+            }
+            
+            let [major, minor, patch] = parts;
+            
+            switch(type) {
+                case 'major':
+                    major++;
+                    minor = 0;
+                    patch = 0;
+                    break;
+                case 'minor':
+                    minor++;
+                    patch = 0;
+                    break;
+                case 'patch':
+                    patch++;
+                    break;
+            }
+            
+            const newVersion = `${major}.${minor}.${patch}`;
+            versionInput.value = newVersion;
+        }
+
+        function setupEditableHeaders() {
+            const title = domCache.get('graphTitle');
+            const subtitle = domCache.get('graphSubtitle');
+
+            // Save on Enter key (and prevent new line)
+            [title, subtitle].forEach(element => {
+                element.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                });
+            });
+        }
+
+        function handleAddGroup() {
+            const label = domCache.get('newGroupLabel').value.trim();
+            const color = domCache.get('newGroupColor').value;
+            const radius = domCache.get('newGroupRadius').value;
+            
+            if (!label) {
+                alert('Group name is required');
+                return;
+            }
+            
+            if (builder.addNewGroup(label, color, radius)) {
+                builder.hideAddGroupModal();
+            }
+        }
+
+        function setupLeftSidebar() {
+            const sidebar = domCache.get('leftSidebar');
+            const toggle = domCache.get('sidebarToggle');
+            const expandBtn = domCache.get('graphsExpandBtn');
+            const graphsList = domCache.get('graphsList');
+            const addGraphBtn = domCache.get('addGraphBtn');
+            
+            // Sidebar toggle
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('expanded');
+            });
+            
+            // Graphs menu expand/collapse
+            expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                graphsList.classList.toggle('expanded');
+                expandBtn.classList.toggle('expanded');
+            });
+            
+            // Add graph button
+            addGraphBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showAddGraphModal();
+            });
+        }
+
+        function showAddGraphModal() {
+            const modal = domCache.get('addGraphModal');
+            domCache.get('newGraphName').value = '';
+            domCache.get('newGraphDescription').value = '';
+            modal.style.display = 'flex';
+        }
+
+        function hideAddGraphModal() {
+            domCache.get('addGraphModal').style.display = 'none';
+        }
+
+        async function handleAddGraph() {
+            const name = domCache.get('newGraphName').value.trim();
+            const description = domCache.get('newGraphDescription').value.trim();
+            
+            if (!name) {
+                alert('Graph name is required');
+                return;
+            }
+            
+            const newGraphId = await GraphManager.createGraph(name, description);
+            await GraphManager.loadGraph(newGraphId);
+            hideAddGraphModal();
+        }
+
+        async function handleSaveGraph() {
+            const title = domCache.get('graphTitle').textContent.trim();
+            const subtitle = domCache.get('graphSubtitle').textContent.trim();
+            
+            if (!title || title === 'Architecture Builder') {
+                alert('Please give your graph a unique title before saving.');
+                domCache.get('graphTitle').focus();
+                return;
+            }
+            
+            // If no current graph ID, create a new one
+            if (!currentGraphId) {
+                currentGraphId = GraphUtils.generateUUID();
+            }
+            
+            // Save the graph (this will sync the menu title automatically)
+            await GraphManager.saveGraph(currentGraphId, graph.rootData);
+            
+            // Show success feedback
+            const saveBtn = domCache.get('saveBtn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '✓ Saved';
+            saveBtn.disabled = true;
+            
+            setTimeout(() => {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }, 2000);
+        }
+
+        function loadEmptyState() {
+            currentGraphId = null;
+            domCache.get('graphTitle').textContent = 'Untitled Graph';
+            domCache.get('graphSubtitle').textContent = 'Click to edit title and description';
+            
+            // Create empty graph data with only default group
+            const emptyData = {
+                id: 'empty',
+                label: 'Empty Graph',
+                nodes: [],
+                links: [],
+                groups: DEFAULT_GROUPS
+            };
+            
+            graph.rootData = emptyData;
+            graph.viewStack = [];
+            graph._hydrateData(emptyData);
+            graph.navigateTo(emptyData);
+
+            /*
+            if (builder.isBuilderMode) {
+                builder._updateGraphForBuilder();
+            }
+            */
+            
+            // Enable builder mode by default for empty state
+            builder.enableBuilderMode();
+            
+            // Update UI to reflect builder mode
+            const viewerBtn = domCache.get('viewerBtn');
+            const builderBtn = domCache.get('builderBtn');
+            const saveBtn = domCache.get('saveBtn');
+            
+            viewerBtn.classList.remove('active');
+            builderBtn.classList.add('active');
+            saveBtn.style.display = 'inline-flex';
+        }
+    </script>
+</body>
+
+</html>
