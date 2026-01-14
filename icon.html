@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codicon Icons Gallery</title>
+    <style>
+        @font-face {
+            font-family: 'codicon';
+            src: url('codicon.ttf') format('truetype');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 1px solid #3e3e3e;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .header p {
+            font-size: 16px;
+            color: #888;
+        }
+
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            background: #252526;
+            border: 1px solid #3e3e3e;
+            border-radius: 5px;
+            color: #cccccc;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #007acc;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .icon-item {
+            background: #252526;
+            border: 1px solid #3e3e3e;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-item:hover {
+            background: #2a2d2e;
+            border-color: #007acc;
+            transform: translateY(-2px);
+        }
+
+        .icon-item.copied {
+            background: #1e5e1e;
+            border-color: #4ec9b0;
+        }
+
+        .icon-display {
+            font-family: 'codicon';
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: #007acc;
+        }
+
+        .icon-name {
+            font-size: 12px;
+            color: #888;
+            word-break: break-word;
+            margin-bottom: 5px;
+        }
+
+        .icon-code {
+            font-size: 10px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stats {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #252526;
+            border: 1px solid #3e3e3e;
+            border-radius: 5px;
+            padding: 10px 20px;
+            color: #cccccc;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .theme-toggle:hover {
+            background: #2a2d2e;
+            border-color: #007acc;
+        }
+
+        body.light-theme {
+            background: #ffffff;
+            color: #333333;
+        }
+
+        body.light-theme .header {
+            border-bottom-color: #d4d4d4;
+        }
+
+        body.light-theme .header h1 {
+            color: #000;
+        }
+
+        body.light-theme .header p,
+        body.light-theme .icon-name,
+        body.light-theme .stats {
+            color: #666;
+        }
+
+        body.light-theme .search-box input {
+            background: #f3f3f3;
+            border-color: #d4d4d4;
+            color: #333;
+        }
+
+        body.light-theme .icon-item {
+            background: #f3f3f3;
+            border-color: #d4d4d4;
+        }
+
+        body.light-theme .icon-item:hover {
+            background: #e8e8e8;
+            border-color: #007acc;
+        }
+
+        body.light-theme .icon-item.copied {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        body.light-theme .theme-toggle {
+            background: #f3f3f3;
+            border-color: #d4d4d4;
+            color: #333;
+        }
+
+        body.light-theme .theme-toggle:hover {
+            background: #e8e8e8;
+        }
+
+        body.light-theme .icon-code {
+            color: #999;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+
+    <div class="header">
+        <h1>Codicon Icons Gallery</h1>
+        <p>Click any icon to copy its CSS class</p>
+        <a href="https://microsoft.github.io/vscode-codicons/dist/codicon.html">Official Codicon Gallery</a>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search icons..." onkeyup="filterIcons()">
+    </div>
+
+    <div class="stats">
+        <span id="iconCount">0</span> icons available
+    </div>
+
+    <div class="icon-grid" id="iconGrid"></div>
+    <div class="no-results" id="noResults" style="display: none;">No icons found</div>
+
+    <script>
+        // Codicon icon mappings (Unicode to name)
+        const codicons = {
+            'ea60': 'add',
+            'ea64': 'plus',
+            'ea76': 'gist-secret',
+            'ea77': 'gist',
+            'ea78': 'code',
+            'ea79': 'note',
+            'ea7a': 'comment',
+            'ea7b': 'alert',
+            'ea7c': 'warning',
+            'ea7d': 'search',
+            'ea7e': 'search-save',
+            'ea7f': 'log-out',
+            'ea80': 'sign-out',
+            'ea81': 'log-in',
+            'ea82': 'sign-in',
+            'ea83': 'eye',
+            'ea84': 'eye-unwatch',
+            'ea85': 'eye-watch',
+            'ea86': 'circle-filled',
+            'ea87': 'primitive-dot',
+            'ea88': 'close-dirty',
+            'ea89': 'debug-breakpoint',
+            'ea8a': 'debug-breakpoint-disabled',
+            'ea8b': 'debug-hint',
+            'ea8c': 'primitive-square',
+            'ea8d': 'edit',
+            'ea8e': 'pencil',
+            'ea8f': 'info',
+            'ea90': 'issue-opened',
+            'ea91': 'gist-private',
+            'ea92': 'git-fork-private',
+            'ea93': 'lock',
+            'ea94': 'mirror-private',
+            'ea95': 'close',
+            'ea96': 'remove-close',
+            'ea97': 'x',
+            'ea98': 'sync',
+            'ea99': 'clone',
+            'ea9a': 'desktop-download',
+            'ea9b': 'beaker',
+            'ea9c': 'microscope',
+            'ea9d': 'vm',
+            'ea9e': 'device-desktop',
+            'ea9f': 'file',
+            'eaa0': 'file-text',
+            'eaa1': 'more',
+            'eaa2': 'ellipsis',
+            'eaa3': 'kebab-horizontal',
+            'eaa4': 'mail-reply',
+            'eaa5': 'reply',
+            'eaa6': 'organization',
+            'eaa7': 'organization-filled',
+            'eaa8': 'organization-outline',
+            'eaa9': 'new-file',
+            'eaaa': 'file-add',
+            'eaab': 'new-folder',
+            'eaac': 'file-directory-create',
+            'eaad': 'trash',
+            'eaae': 'trashcan',
+            'eaaf': 'history',
+            'eab0': 'clock',
+            'eab1': 'folder',
+            'eab2': 'file-directory',
+            'eab3': 'symbol-folder',
+            'eab4': 'logo-github',
+            'eab5': 'mark-github',
+            'eab6': 'github',
+            'eab7': 'terminal',
+            'eab8': 'console',
+            'eab9': 'repl',
+            'eaba': 'zap',
+            'eabb': 'symbol-event',
+            'eabc': 'error',
+            'eabd': 'stop',
+            'eabe': 'variable',
+            'eabf': 'symbol-variable',
+            'eac0': 'array',
+            'eac1': 'symbol-array',
+            'eac2': 'symbol-module',
+            'eac3': 'symbol-package',
+            'eac4': 'symbol-namespace',
+            'eac5': 'symbol-object',
+            'eac6': 'symbol-method',
+            'eac7': 'symbol-function',
+            'eac8': 'symbol-constructor',
+            'eac9': 'symbol-boolean',
+            'eaca': 'symbol-null',
+            'eacb': 'symbol-numeric',
+            'eacc': 'symbol-number',
+            'eacd': 'symbol-structure',
+            'eace': 'symbol-struct',
+            'eacf': 'symbol-parameter',
+            'ead0': 'symbol-type-parameter',
+            'ead1': 'symbol-key',
+            'ead2': 'symbol-text',
+            'ead3': 'symbol-reference',
+            'ead4': 'go-to-file',
+            'ead5': 'symbol-enum',
+            'ead6': 'symbol-value',
+            'ead7': 'symbol-ruler',
+            'ead8': 'symbol-unit',
+            'ead9': 'activate-breakpoints',
+            'eada': 'archive',
+            'eadb': 'arrow-both',
+            'eadc': 'arrow-down',
+            'eadd': 'arrow-left',
+            'eade': 'arrow-right',
+            'eadf': 'arrow-small-down',
+            'eae0': 'arrow-small-left',
+            'eae1': 'arrow-small-right',
+            'eae2': 'arrow-small-up',
+            'eae3': 'arrow-up',
+            'eae4': 'bell',
+            'eae5': 'bold',
+            'eae6': 'book',
+            'eae7': 'bookmark',
+            'eae8': 'debug-breakpoint-conditional-unverified',
+            'eae9': 'debug-breakpoint-conditional',
+            'eaea': 'debug-breakpoint-conditional-disabled',
+            'eaeb': 'debug-breakpoint-data-unverified',
+            'eaec': 'debug-breakpoint-data',
+            'eaed': 'debug-breakpoint-data-disabled',
+            'eaee': 'debug-breakpoint-log-unverified',
+            'eaef': 'debug-breakpoint-log',
+            'eaf0': 'debug-breakpoint-log-disabled',
+            'eaf1': 'briefcase',
+            'eaf2': 'broadcast',
+            'eaf3': 'browser',
+            'eaf4': 'bug',
+            'eaf5': 'calendar',
+            'eaf6': 'case-sensitive',
+            'eaf7': 'check',
+            'eaf8': 'checklist',
+            'eaf9': 'chevron-down',
+            'eafa': 'chevron-left',
+            'eafb': 'chevron-right',
+            'eafc': 'chevron-up',
+            'eafd': 'chrome-close',
+            'eafe': 'chrome-maximize',
+            'eaff': 'chrome-minimize',
+            'eb00': 'chrome-restore',
+            'eb01': 'circle-outline',
+            'eb02': 'debug-breakpoint-unverified',
+            'eb03': 'circle-slash',
+            'eb04': 'circuit-board',
+            'eb05': 'clear-all',
+            'eb06': 'clippy',
+            'eb07': 'close-all',
+            'eb08': 'cloud-download',
+            'eb09': 'cloud-upload',
+            'eb0a': 'code',
+            'eb0b': 'collapse-all',
+            'eb0c': 'color-mode',
+            'eb0d': 'comment-discussion',
+            'eb0e': 'credit-card',
+            'eb0f': 'dash',
+            'eb10': 'dashboard',
+            'eb11': 'database',
+            'eb12': 'debug-continue',
+            'eb13': 'debug-disconnect',
+            'eb14': 'debug-pause',
+            'eb15': 'debug-restart',
+            'eb16': 'debug-start',
+            'eb17': 'debug-step-into',
+            'eb18': 'debug-step-out',
+            'eb19': 'debug-step-over',
+            'eb1a': 'debug-stop',
+            'eb1b': 'debug',
+            'eb1c': 'device-camera-video',
+            'eb1d': 'device-camera',
+            'eb1e': 'device-mobile',
+            'eb1f': 'diff-added',
+            'eb20': 'diff-ignored',
+            'eb21': 'diff-modified',
+            'eb22': 'diff-removed',
+            'eb23': 'diff-renamed',
+            'eb24': 'diff',
+            'eb25': 'discard',
+            'eb26': 'editor-layout',
+            'eb27': 'empty-window',
+            'eb28': 'exclude',
+            'eb29': 'extensions',
+            'eb2a': 'eye-closed',
+            'eb2b': 'file-binary',
+            'eb2c': 'file-code',
+            'eb2d': 'file-media',
+            'eb2e': 'file-pdf',
+            'eb2f': 'file-submodule',
+            'eb30': 'file-symlink-directory',
+            'eb31': 'file-symlink-file',
+            'eb32': 'file-zip',
+            'eb33': 'files',
+            'eb34': 'filter',
+            'eb35': 'flame',
+            'eb36': 'fold-down',
+            'eb37': 'fold-up',
+            'eb38': 'fold',
+            'eb39': 'folder-active',
+            'eb3a': 'folder-opened',
+            'eb3b': 'gear',
+            'eb3c': 'gift',
+            'eb3d': 'gist-fork',
+            'eb3e': 'gist-new',
+            'eb3f': 'git-commit',
+            'eb40': 'git-compare',
+            'eb41': 'compare-changes',
+            'eb42': 'git-merge',
+            'eb43': 'github-action',
+            'eb44': 'github-alt',
+            'eb45': 'globe',
+            'eb46': 'grabber',
+            'eb47': 'graph',
+            'eb48': 'gripper',
+            'eb49': 'heart',
+            'eb4a': 'home',
+            'eb4b': 'horizontal-rule',
+            'eb4c': 'hubot',
+            'eb4d': 'inbox',
+            'eb4e': 'issue-closed',
+            'eb4f': 'issue-reopened',
+            'eb50': 'issues',
+            'eb51': 'italic',
+            'eb52': 'jersey',
+            'eb53': 'json',
+            'eb54': 'kebab-vertical',
+            'eb55': 'key',
+            'eb56': 'law',
+            'eb57': 'lightbulb-autofix',
+            'eb58': 'link-external',
+            'eb59': 'link',
+            'eb5a': 'list-ordered',
+            'eb5b': 'list-unordered',
+            'eb5c': 'live-share',
+            'eb5d': 'loading',
+            'eb5e': 'location',
+            'eb5f': 'mail-read',
+            'eb60': 'mail',
+            'eb61': 'markdown',
+            'eb62': 'megaphone',
+            'eb63': 'mention',
+            'eb64': 'milestone',
+            'eb65': 'mortar-board',
+            'eb66': 'move',
+            'eb67': 'multiple-windows',
+            'eb68': 'mute',
+            'eb69': 'no-newline',
+            'eb6a': 'note',
+            'eb6b': 'octoface',
+            'eb6c': 'open-preview',
+            'eb6d': 'package',
+            'eb6e': 'paintcan',
+            'eb6f': 'pin',
+            'eb70': 'play',
+            'eb71': 'run',
+            'eb72': 'plug',
+            'eb73': 'preserve-case',
+            'eb74': 'preview',
+            'eb75': 'project',
+            'eb76': 'pulse',
+            'eb77': 'question',
+            'eb78': 'quote',
+            'eb79': 'radio-tower',
+            'eb7a': 'reactions',
+            'eb7b': 'references',
+            'eb7c': 'refresh',
+            'eb7d': 'regex',
+            'eb7e': 'remote-explorer',
+            'eb7f': 'remote',
+            'eb80': 'remove',
+            'eb81': 'replace-all',
+            'eb82': 'replace',
+            'eb83': 'repo-clone',
+            'eb84': 'repo-force-push',
+            'eb85': 'repo-pull',
+            'eb86': 'repo-push',
+            'eb87': 'report',
+            'eb88': 'request-changes',
+            'eb89': 'rocket',
+            'eb8a': 'root-folder-opened',
+            'eb8b': 'root-folder',
+            'eb8c': 'rss',
+            'eb8d': 'ruby',
+            'eb8e': 'save-all',
+            'eb8f': 'save-as',
+            'eb90': 'save',
+            'eb91': 'screen-full',
+            'eb92': 'screen-normal',
+            'eb93': 'search-stop',
+            'eb94': 'server',
+            'eb95': 'settings-gear',
+            'eb96': 'settings',
+            'eb97': 'shield',
+            'eb98': 'smiley',
+            'eb99': 'sort-precedence',
+            'eb9a': 'split-horizontal',
+            'eb9b': 'split-vertical',
+            'eb9c': 'squirrel',
+            'eb9d': 'star-full',
+            'eb9e': 'star-half',
+            'eb9f': 'symbol-class',
+            'eba0': 'symbol-color',
+            'eba1': 'symbol-constant',
+            'eba2': 'symbol-enum-member',
+            'eba3': 'symbol-field',
+            'eba4': 'symbol-file',
+            'eba5': 'symbol-interface',
+            'eba6': 'symbol-keyword',
+            'eba7': 'symbol-misc',
+            'eba8': 'symbol-operator',
+            'eba9': 'symbol-property',
+            'ebaa': 'wrench',
+            'ebab': 'wrench-subaction',
+            'ebac': 'symbol-snippet',
+            'ebad': 'tasklist',
+            'ebae': 'telescope',
+            'ebaf': 'text-size',
+            'ebb0': 'three-bars',
+            'ebb1': 'thumbsdown',
+            'ebb2': 'thumbsup',
+            'ebb3': 'tools',
+            'ebb4': 'triangle-down',
+            'ebb5': 'triangle-left',
+            'ebb6': 'triangle-right',
+            'ebb7': 'triangle-up',
+            'ebb8': 'twitter',
+            'ebb9': 'unfold',
+            'ebba': 'unlock',
+            'ebbb': 'unmute',
+            'ebbc': 'unverified',
+            'ebbd': 'verified',
+            'ebbe': 'versions',
+            'ebbf': 'vm-active',
+            'ebc0': 'vm-outline',
+            'ebc1': 'vm-running',
+            'ebc2': 'watch',
+            'ebc3': 'whitespace',
+            'ebc4': 'whole-word',
+            'ebc5': 'window',
+            'ebc6': 'word-wrap',
+            'ebc7': 'zoom-in',
+            'ebc8': 'zoom-out',
+            'ebc9': 'list-filter',
+            'ebca': 'list-flat',
+            'ebcb': 'list-selection',
+            'ebcc': 'selection',
+            'ebcd': 'list-tree',
+            'ebce': 'debug-breakpoint-function-unverified',
+            'ebcf': 'debug-breakpoint-function',
+            'ebd0': 'debug-breakpoint-function-disabled',
+            'ebd1': 'debug-stackframe-active',
+            'ebd2': 'debug-stackframe-dot',
+            'ebd3': 'debug-stackframe',
+            'ebd4': 'debug-stackframe-focused',
+            'ebd5': 'debug-breakpoint-unsupported',
+            'ebd6': 'symbol-string',
+            'ebd7': 'debug-reverse-continue',
+            'ebd8': 'debug-step-back',
+            'ebd9': 'debug-restart-frame',
+            'ebda': 'debug-alt',
+            'ebdb': 'call-incoming',
+            'ebdc': 'call-outgoing',
+            'ebdd': 'menu',
+            'ebde': 'expand-all',
+            'ebdf': 'feedback',
+            'ebe0': 'group-by-ref-type',
+            'ebe1': 'ungroup-by-ref-type',
+            'ebe2': 'account',
+            'ebe3': 'bell-dot',
+            'ebe4': 'debug-console',
+            'ebe5': 'library',
+            'ebe6': 'output',
+            'ebe7': 'run-all',
+            'ebe8': 'sync-ignored',
+            'ebe9': 'pinned',
+            'ebea': 'github-inverted',
+            'ebeb': 'server-process',
+            'ebec': 'server-environment',
+            'ebed': 'pass',
+            'ebee': 'issue-closed-unread',
+            'ebef': 'stop-circle',
+            'ebf0': 'play-circle',
+            'ebf1': 'record',
+            'ebf2': 'debug-alt-small',
+            'ebf3': 'vm-connect',
+            'ebf4': 'cloud',
+            'ebf5': 'merge',
+            'ebf6': 'export',
+            'ebf7': 'graph-left',
+            'ebf8': 'magnet',
+            'ebf9': 'notebook',
+            'ebfa': 'redo',
+            'ebfb': 'check-all',
+            'ebfc': 'pinned-dirty',
+            'ebfd': 'pass-filled',
+            'ebfe': 'circle-large-filled',
+            'ebff': 'circle-large-outline',
+            'ec00': 'combine',
+            'ec01': 'gather',
+            'ec02': 'table',
+            'ec03': 'variable-group',
+            'ec04': 'type-hierarchy',
+            'ec05': 'type-hierarchy-sub',
+            'ec06': 'type-hierarchy-super',
+            'ec07': 'git-pull-request-create',
+            'ec08': 'run-above',
+            'ec09': 'run-below',
+            'ec0a': 'notebook-template',
+            'ec0b': 'debug-rerun',
+            'ec0c': 'workspace-trusted',
+            'ec0d': 'workspace-untrusted',
+            'ec0e': 'workspace-unknown',
+            'ec0f': 'terminal-cmd',
+            'ec10': 'terminal-debian',
+            'ec11': 'terminal-linux',
+            'ec12': 'terminal-powershell',
+            'ec13': 'terminal-tmux',
+            'ec14': 'terminal-ubuntu',
+            'ec15': 'terminal-bash',
+            'ec16': 'arrow-swap',
+            'ec17': 'copy',
+            'ec18': 'person-add',
+            'ec19': 'filter-filled',
+            'ec1a': 'wand',
+            'ec1b': 'debug-line-by-line',
+            'ec1c': 'inspect',
+            'ec1d': 'layers',
+            'ec1e': 'layers-dot',
+            'ec1f': 'layers-active',
+            'ec20': 'compass',
+            'ec21': 'compass-dot',
+            'ec22': 'compass-active',
+            'ec23': 'azure',
+            'ec24': 'issue-draft',
+            'ec25': 'git-pull-request-closed',
+            'ec26': 'git-pull-request-draft',
+            'ec27': 'debug-all',
+            'ec28': 'debug-coverage',
+            'ec29': 'run-errors',
+            'ec2a': 'folder-library',
+            'ec2b': 'debug-continue-small',
+            'ec2c': 'beaker-stop',
+            'ec2d': 'graph-line',
+            'ec2e': 'graph-scatter',
+            'ec2f': 'pie-chart',
+            'ec30': 'bracket',
+            'ec31': 'bracket-dot',
+            'ec32': 'bracket-error',
+            'ec33': 'lock-small',
+            'ec34': 'azure-devops',
+            'ec35': 'verified-filled',
+            'ec36': 'newline',
+            'ec37': 'layout',
+            'ec38': 'layout-activitybar-left',
+            'ec39': 'layout-activitybar-right',
+            'ec3a': 'layout-panel-left',
+            'ec3b': 'layout-panel-center',
+            'ec3c': 'layout-panel-justify',
+            'ec3d': 'layout-panel-right',
+            'ec3e': 'layout-panel',
+            'ec3f': 'layout-sidebar-left',
+            'ec40': 'layout-sidebar-right',
+            'ec41': 'layout-statusbar',
+            'ec42': 'layout-menubar',
+            'ec43': 'layout-centered',
+            'ec44': 'target',
+            'ec45': 'indent',
+            'ec46': 'record-small',
+            'ec47': 'error-small',
+            'ec48': 'terminal-decoration-error',
+            'ec49': 'arrow-circle-down',
+            'ec4a': 'arrow-circle-left',
+            'ec4b': 'arrow-circle-right',
+            'ec4c': 'arrow-circle-up',
+            'ec4d': 'layout-sidebar-right-off',
+            'ec4e': 'layout-panel-off',
+            'ec4f': 'layout-sidebar-left-off',
+            'ec50': 'blank',
+            'ec51': 'heart-filled',
+            'ec52': 'map',
+            'ec53': 'map-filled',
+            'ec54': 'circle-small',
+            'ec55': 'bell-slash',
+            'ec56': 'bell-slash-dot',
+            'ec57': 'comment-unresolved',
+            'ec58': 'git-pull-request-go-to-changes',
+            'ec59': 'git-pull-request-new-changes',
+            'ec5a': 'search-fuzzy',
+            'ec5b': 'comment-draft',
+            'ec5c': 'send',
+            'ec5d': 'sparkle',
+            'ec5e': 'insert',
+            'ec5f': 'mic',
+            'ec60': 'thumbsdown-filled',
+            'ec61': 'thumbsup-filled',
+            'ec62': 'coffee',
+            'ec63': 'snake',
+            'ec64': 'game',
+            'ec65': 'vr',
+            'ec66': 'chip',
+            'ec67': 'piano',
+            'ec68': 'music',
+            'ec69': 'mic-filled',
+            'ec6a': 'repo-fetch',
+            'ec6b': 'copilot',
+            'ec6c': 'lightbulb-sparkle',
+            'ec6d': 'robot',
+            'ec6e': 'sparkle-filled',
+            'ec6f': 'diff-single',
+            'ec70': 'diff-multiple',
+            'ec71': 'surround-with',
+            'ec72': 'share',
+            'ec73': 'git-stash',
+            'ec74': 'git-stash-apply',
+            'ec75': 'git-stash-pop',
+            'ec76': 'vscode',
+            'ec77': 'vscode-insiders',
+            'ec78': 'code-oss',
+            'ec79': 'run-coverage',
+            'ec7a': 'run-all-coverage',
+            'ec7b': 'coverage',
+            'ec7c': 'github-project'
+        };
+
+        // Generate icon grid
+        function generateIcons() {
+            const grid = document.getElementById('iconGrid');
+            const iconCount = document.getElementById('iconCount');
+            
+            let html = '';
+            let count = 0;
+
+            for (const [unicode, name] of Object.entries(codicons)) {
+                const char = String.fromCharCode(parseInt(unicode, 16));
+                html += `
+                    <div class="icon-item" onclick="copyIcon('${name}')" data-name="${name}" data-code="${unicode}">
+                        <div class="icon-display">${char}</div>
+                        <div class="icon-name">codicon-${name}</div>
+                        <div class="icon-code">\\${unicode}</div>
+                    </div>
+                `;
+                count++;
+            }
+
+            grid.innerHTML = html;
+            iconCount.textContent = count;
+        }
+
+        // Copy icon class to clipboard
+        function copyIcon(name) {
+            const iconClass = `codicon codicon-${name}`;
+            navigator.clipboard.writeText(iconClass).then(() => {
+                // Visual feedback
+                const items = document.querySelectorAll('.icon-item');
+                items.forEach(item => {
+                    if (item.dataset.name === name) {
+                        item.classList.add('copied');
+                        setTimeout(() => item.classList.remove('copied'), 1000);
+                    }
+                });
+            });
+        }
+
+        // Filter icons
+        function filterIcons() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const items = document.querySelectorAll('.icon-item');
+            const noResults = document.getElementById('noResults');
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const name = item.dataset.name.toLowerCase();
+                const code = item.dataset.code.toLowerCase();
+                
+                if (name.includes(searchTerm) || code.includes(searchTerm)) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            document.getElementById('iconCount').textContent = visibleCount;
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+        }
+
+        // Load saved theme
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            generateIcons();
+        });
+    </script>
+</body>
+</html>
