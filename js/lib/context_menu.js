@@ -46,20 +46,17 @@ class ContextMenu {
         return this;
     }
 
-    // Add separator
     addSeparator() {
         this.items.push({ type: 'separator' });
         return this;
     }
 
-    // Clear all items
     clear() {
         this.items = [];
         this.menu.innerHTML = '';
         return this;
     }
 
-    // Render menu items
     _render() {
         this.menu.innerHTML = '';
 
@@ -101,11 +98,9 @@ class ContextMenu {
         });
     }
 
-    // Show menu at position
     show(x, y) {
         this._render();
         
-        // Position menu
         this.menu.style.left = x + 'px';
         this.menu.style.top = y + 'px';
         this.menu.style.display = 'block';
@@ -121,13 +116,11 @@ class ContextMenu {
         }
     }
 
-    // Hide menu
     hide() {
         this.menu.style.display = 'none';
         this.isVisible = false;
     }
 
-    // Destroy menu
     destroy() {
         if (this.menu && this.menu.parentNode) {
             this.menu.parentNode.removeChild(this.menu);

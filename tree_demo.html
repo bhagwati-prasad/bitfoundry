@@ -268,126 +268,137 @@ drillRenderer.<span style="color: #61afef;">render</span>(tree, document.<span s
         import { Tree, TreeNode, ASCIIRenderer, DirectoryRenderer, DrillDownRenderer } from './js/tree/index.js';
 
         // Create a richer sample tree
-        const root = new TreeNode({
-            title: 'My Computer',
-            description: 'Root of the file system',
-            icon: '💻'
-        });
+        function createSampleTree() { 
+            const root = new TreeNode({
+                title: 'My Computer',
+                description: 'Root of the file system',
+                icon: '💻'
+            });
 
-        const documents = new TreeNode({
-            title: 'Documents',
-            description: 'Personal documents folder',
-            icon: '📁'
-        });
+            const documents = new TreeNode({
+                title: 'Documents',
+                description: 'Personal documents folder',
+                icon: '📁'
+            });
 
-        const work = new TreeNode({
-            title: 'Work',
-            description: 'Work-related files',
-            icon: '💼'
-        });
+            const work = new TreeNode({
+                title: 'Work',
+                description: 'Work-related files',
+                icon: '💼'
+            });
 
-        const projects = new TreeNode({
-            title: 'Projects',
-            description: 'Development projects',
-            icon: '🚀'
-        });
+            const projects = new TreeNode({
+                title: 'Projects',
+                description: 'Development projects',
+                icon: '🚀'
+            });
 
-        const pictures = new TreeNode({
-            title: 'Pictures',
-            description: 'Photo collection',
-            icon: '🖼️'
-        });
+            const pictures = new TreeNode({
+                title: 'Pictures',
+                description: 'Photo collection',
+                icon: '🖼️'
+            });
 
-        const vacation = new TreeNode({
-            title: 'Vacation 2025',
-            description: 'Summer vacation photos',
-            icon: '🏖️'
-        });
+            const vacation = new TreeNode({
+                title: 'Vacation 2025',
+                description: 'Summer vacation photos',
+                icon: '🏖️'
+            });
 
-        const family = new TreeNode({
-            title: 'Family',
-            description: 'Family photos',
-            icon: '👨‍👩‍👧‍👦'
-        });
+            const family = new TreeNode({
+                title: 'Family',
+                description: 'Family photos',
+                icon: '👨‍👩‍👧‍👦'
+            });
 
-        const music = new TreeNode({
-            title: 'Music',
-            description: 'Music library',
-            icon: '🎵'
-        });
+            const music = new TreeNode({
+                title: 'Music',
+                description: 'Music library',
+                icon: '🎵'
+            });
 
-        const rock = new TreeNode({
-            title: 'Rock',
-            description: 'Rock music collection',
-            icon: '🎸'
-        });
+            const rock = new TreeNode({
+                title: 'Rock',
+                description: 'Rock music collection',
+                icon: '🎸'
+            });
 
-        const jazz = new TreeNode({
-            title: 'Jazz',
-            description: 'Jazz music collection',
-            icon: '🎺'
-        });
+            const jazz = new TreeNode({
+                title: 'Jazz',
+                description: 'Jazz music collection',
+                icon: '🎺'
+            });
 
-        // Reports
-        const report1 = new TreeNode({
-            title: 'Annual Report 2025.pdf',
-            description: '<strong>Annual Report</strong><br>Financial summary for 2025',
-            icon: '📄'
-        });
+            // Reports
+            const report1 = new TreeNode({
+                title: 'Annual Report 2025.pdf',
+                description: '<strong>Annual Report</strong><br>Financial summary for 2025',
+                icon: '📄'
+            });
 
-        const report2 = new TreeNode({
-            title: 'Q4 Summary.xlsx',
-            description: '<strong>Q4 Summary</strong><br>Quarterly financial data',
-            icon: '📊'
-        });
+            const report2 = new TreeNode({
+                title: 'Q4 Summary.xlsx',
+                description: '<strong>Q4 Summary</strong><br>Quarterly financial data',
+                icon: '📊'
+            });
 
-        const presentation = new TreeNode({
-            title: 'Presentation.pptx',
-            description: '<strong>Company Presentation</strong><br>Main company deck',
-            icon: '📽️'
-        });
+            const presentation = new TreeNode({
+                title: 'Presentation.pptx',
+                description: '<strong>Company Presentation</strong><br>Main company deck',
+                icon: '📽️'
+            });
 
-        // Project files
-        const project1 = new TreeNode({
-            title: 'Website Redesign',
-            description: '<strong>Website Project</strong><br>New company website design and development',
-            icon: '🌐'
-        });
+            // Project files
+            const project1 = new TreeNode({
+                title: 'Website Redesign',
+                description: '<strong>Website Project</strong><br>New company website design and development',
+                icon: '🌐'
+            });
 
-        const project2 = new TreeNode({
-            title: 'Mobile App',
-            description: '<strong>Mobile App</strong><br>Customer mobile application',
-            icon: '📱'
-        });
+            const project2 = new TreeNode({
+                title: 'Mobile App',
+                description: '<strong>Mobile App</strong><br>Customer mobile application',
+                icon: '📱'
+            });
 
-        const readme = new TreeNode({
-            title: 'README.md',
-            description: '<strong>Documentation</strong><br>Project documentation',
-            icon: '📝'
-        });
+            const readme = new TreeNode({
+                title: 'README.md',
+                description: '<strong>Documentation</strong><br>Project documentation',
+                icon: '📝'
+            });
 
-        // Build tree structure
-        work.addChild(report1);
-        work.addChild(report2);
-        work.addChild(presentation);
+            // Build tree structure
+            work.addChild(report1);
+            work.addChild(report2);
+            work.addChild(presentation);
 
-        project1.addChild(readme);
-        projects.addChild(project1);
-        projects.addChild(project2);
+            project1.addChild(readme);
+            projects.addChild(project1);
+            projects.addChild(project2);
 
-        documents.addChild(work);
-        documents.addChild(projects);
+            documents.addChild(work);
+            documents.addChild(projects);
 
-        pictures.addChild(vacation);
-        pictures.addChild(family);
+            pictures.addChild(vacation);
+            pictures.addChild(family);
 
-        music.addChild(rock);
-        music.addChild(jazz);
+            music.addChild(rock);
+            music.addChild(jazz);
 
-        root.addChild(documents);
-        root.addChild(pictures);
-        root.addChild(music);
+            root.addChild(documents);
+            root.addChild(pictures);
+            root.addChild(music);
 
+            return root;
+        }
+
+        function createVanillaProjectTree() {
+            //contract -> communication -> [Global interface, default status codes and messages, standard message structures]
+            //remediation -> options of remediation strategies for an error situation (identified by error code)
+        }
+
+        
+        const root = createSampleTree();
         const tree = new Tree(root);
 
         // Store globally for button handlers
