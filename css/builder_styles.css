@@ -1100,7 +1100,7 @@ select.form-control {
     fill: #eff6ff;
 }
 
-.icon-interaction-info circle {
+.builder-icon.delete-icon {
     stroke: #f97316;
 }
 
@@ -1132,6 +1132,10 @@ select.form-control {
     pointer-events: all;
 }
 
+.builder-icon.delete-icon circle {
+    fill: rgba(255, 0, 0, 0.1);
+}
+
 .builder-icon:hover circle {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
@@ -1139,6 +1143,9 @@ select.form-control {
 .builder-icon text {
     transition: font-size 0.2s ease;
     pointer-events: none;
+}
+.builder-icon.edit-icon text {
+    rotate: -45deg; 
 }
 
 .builder-icon path {
