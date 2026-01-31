@@ -1132,6 +1132,10 @@ select.form-control {
     pointer-events: all;
 }
 
+.builder-icon.delete-icon circle {
+    fill: rgba(255, 0, 0, 0.1);
+}
+
 .builder-icon:hover circle {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
