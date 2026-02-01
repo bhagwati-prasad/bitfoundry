@@ -1,52 +1,38 @@
 // Property Editor Modal for Node and Link properties
 
-class PropertyEditor {
+class PropertyEditor extends BaseModal {
     constructor(modalId = 'property-editor-modal') {
+        super({
+            modalId,
+            existingElement: false,
+            extraClass: 'property-editor-modal',
+            contentClass: 'modal-content property-editor-content',
+            contentId: 'property-editor-form',
+            titleId: 'property-editor-title',
+            withFooter: true
+        });
+
         this.modalId = modalId;
-        this.modal = null;
         this.currentType = null; // 'node' or 'link'
         this.currentData = null;
         this.onSave = null;
         this.groups = null;
-        this._init();
-    }
+        if (!this.modal) return;
 
-    _init() {
-        // Create modal structure
-        this.modal = document.createElement('div');
-        this.modal.id = this.modalId;
-        this.modal.className = 'modal-overlay property-editor-modal';
-        this.modal.style.display = 'none';
+        this.setTitle('Edit Properties');
 
-        const modalBox = document.createElement('div');
-        modalBox.className = 'modal-box';
+        this.isMetadataVisible = false;
+        this.modal.classList.add('metadata-hidden');
 
-        // Header
-        const header = document.createElement('div');
-        header.className = 'modal-header';
-
-        const title = document.createElement('h3');
-        title.className = 'modal-title';
-        title.id = 'property-editor-title';
-        title.textContent = 'Edit Properties';
-
-        const closeBtn = document.createElement('button');
-        closeBtn.type = 'button';
-        closeBtn.className = 'close-btn';
-        closeBtn.textContent = '×';
-        closeBtn.onclick = () => this.close();
-
-        header.appendChild(title);
-        header.appendChild(closeBtn);
-
-        // Content
-        const content = document.createElement('div');
-        content.className = 'modal-content property-editor-content';
-        content.id = 'property-editor-form';
-
-        // Footer
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
+        this.metadataBtn = document.createElement('button');
+        this.metadataBtn.type = 'button';
+        this.metadataBtn.className = 'modal-metadata-btn';
+        this.metadataBtn.setAttribute('aria-label', 'Show metadata');
+        this.metadataBtn.textContent = 'ⓘ';
+        if (this.toolbelt && this.closeBtn) {
+            this.toolbelt.insertBefore(this.metadataBtn, this.closeBtn);
+        }
+        this.metadataBtn.onclick = () => this.toggleMetadata();
 
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
@@ -61,22 +47,10 @@ class PropertyEditor {
         saveBtn.textContent = 'Save';
         saveBtn.onclick = () => this._handleSave();
 
-        footer.appendChild(cancelBtn);
-        footer.appendChild(saveBtn);
-
-        modalBox.appendChild(header);
-        modalBox.appendChild(content);
-        modalBox.appendChild(footer);
-        this.modal.appendChild(modalBox);
-
-        document.body.appendChild(this.modal);
-
-        // Close on overlay click
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.close();
-            }
-        });
+        if (this.footer) {
+            this.footer.appendChild(cancelBtn);
+            this.footer.appendChild(saveBtn);
+        }
     }
 
     setGroups(groups) {
@@ -89,11 +63,12 @@ class PropertyEditor {
         this.currentData = GraphUtils.deepClone(nodeData);
         this.onSave = onSave;
 
-        const title = this.modal.querySelector('#property-editor-title');
-        title.textContent = 'Edit Node Properties';
+        this.setTitle('Edit Node Properties');
 
         this._renderNodeForm();
-        this.modal.style.display = 'flex';
+        this._resetMaximizeState();
+        this._resetMetadataState();
+        super.open();
     }
 
     // Open editor for link
@@ -102,19 +77,20 @@ class PropertyEditor {
         this.currentData = GraphUtils.deepClone(linkData);
         this.onSave = onSave;
 
-        const title = this.modal.querySelector('#property-editor-title');
-        title.textContent = 'Edit Link Properties';
+        this.setTitle('Edit Link Properties');
 
         this._renderLinkForm();
-        this.modal.style.display = 'flex';
+        this._resetMaximizeState();
+        this._resetMetadataState();
+        super.open();
     }
 
     _renderNodeForm() {
-        const form = this.modal.querySelector('#property-editor-form');
+        const form = this.content;
         form.innerHTML = '';
 
         // ID (non-editable)
-        this._addFormField(form, 'ID', 'text', this.currentData.id, 'node-id', true);
+        this._addFormField(form, 'ID', 'text', this.currentData.id, 'node-id', true, true);
 
         // Label
         this._addFormField(form, 'Label', 'text', this.currentData.label, 'node-label');
@@ -133,18 +109,18 @@ class PropertyEditor {
     }
 
     _renderLinkForm() {
-        const form = this.modal.querySelector('#property-editor-form');
+        const form = this.content;
         form.innerHTML = '';
 
         // ID (non-editable)
-        this._addFormField(form, 'ID', 'text', this.currentData.id, 'link-id', true);
+        this._addFormField(form, 'ID', 'text', this.currentData.id, 'link-id', true, true);
 
         // Source and Target (non-editable, for reference)
         const sourceLabel = this.currentData.source?.label || this.currentData.source;
         const targetLabel = this.currentData.target?.label || this.currentData.target;
         
-        this._addFormField(form, 'From', 'text', sourceLabel, 'link-source', true);
-        this._addFormField(form, 'To', 'text', targetLabel, 'link-target', true);
+        this._addFormField(form, 'From', 'text', sourceLabel, 'link-source', true, true);
+        this._addFormField(form, 'To', 'text', targetLabel, 'link-target', true, true);
 
         // Type (dropdown)
         this._addSelectField(form, 'Type', ['flow', 'internal', 'admin'], this.currentData.type || 'flow', 'link-type');
@@ -152,13 +128,19 @@ class PropertyEditor {
         // Label
         this._addFormField(form, 'Label', 'text', this.currentData.label || '', 'link-label');
 
+        // Description (textarea, accepts HTML)
+        this._addTextareaField(form, 'Description (HTML)', this.currentData.desc || '', 'link-desc');
+
         // Direction (new field for bidirectional support)
         this._addSelectField(form, 'Direction', ['forward', 'backward', 'bidirectional'], this.currentData.direction || 'forward', 'link-direction');
     }
 
-    _addFormField(parent, label, type, value, id, readonly = false) {
+    _addFormField(parent, label, type, value, id, readonly = false, isMetadata = false) {
         const group = document.createElement('div');
         group.className = 'form-group';
+        if (isMetadata) {
+            group.classList.add('metadata-field');
+        }
 
         const labelEl = document.createElement('label');
         labelEl.textContent = label;
@@ -293,12 +275,14 @@ class PropertyEditor {
         const type = document.getElementById('link-type')?.value;
         const label = document.getElementById('link-label')?.value;
         const direction = document.getElementById('link-direction')?.value;
+        const desc = document.getElementById('link-desc')?.value;
 
         const updatedLink = {
             ...this.currentData,
             type: type || this.currentData.type,
             label: label || '',
-            direction: direction || 'forward'
+            direction: direction || 'forward',
+            desc: desc || ''
         };
 
         if (this.onSave) {
@@ -309,10 +293,35 @@ class PropertyEditor {
     }
 
     close() {
-        this.modal.style.display = 'none';
+        super.close();
         this.currentType = null;
         this.currentData = null;
         this.onSave = null;
+    }
+
+    toggleMetadata() {
+        if (!this.modal) return;
+        this.isMetadataVisible = !this.isMetadataVisible;
+        this.modal.classList.toggle('metadata-hidden', !this.isMetadataVisible);
+        this._syncMetadataIcon();
+    }
+
+    _resetMetadataState() {
+        if (!this.modal) return;
+        this.isMetadataVisible = false;
+        this.modal.classList.add('metadata-hidden');
+        this._syncMetadataIcon();
+    }
+
+    _syncMetadataIcon() {
+        if (!this.metadataBtn) return;
+        if (this.isMetadataVisible) {
+            this.metadataBtn.textContent = 'ⓧ';
+            this.metadataBtn.setAttribute('aria-label', 'Hide metadata');
+        } else {
+            this.metadataBtn.textContent = 'ⓘ';
+            this.metadataBtn.setAttribute('aria-label', 'Show metadata');
+        }
     }
 
     destroy() {

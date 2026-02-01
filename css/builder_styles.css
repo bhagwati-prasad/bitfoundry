@@ -620,13 +620,8 @@ h1:focus {
 }
 
 .modal-box {
-    background: white;
     width: 90%;
     max-width: 500px;
-    border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    animation: slideUp 0.2s ease-out;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
@@ -634,7 +629,7 @@ h1:focus {
 
 @keyframes slideUp {
     from {
-        transform: translateY(10px);
+        transform: translateY(50px);
         opacity: 0;
     }
     to {
@@ -656,6 +651,56 @@ h1:focus {
     font-weight: 700;
     margin: 0;
     color: #0f172a;
+}
+
+.modal-toolbelt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.modal-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #94a3b8;
+    line-height: 1;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.modal-toggle-btn:hover {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.modal-metadata-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #94a3b8;
+    line-height: 1;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.modal-metadata-btn:hover {
+    background: #f1f5f9;
+    color: #64748b;
 }
 
 .close-btn {
@@ -687,6 +732,17 @@ h1:focus {
     line-height: 1.5;
     overflow-y: auto;
     flex: 1;
+}
+
+.modal-overlay.modal-maximized .modal-box {
+    width: 96vw;
+    height: 92vh;
+    max-width: none;
+    max-height: none;
+}
+
+.property-editor-modal.metadata-hidden .metadata-field {
+    display: none;
 }
 
 .modal-footer {

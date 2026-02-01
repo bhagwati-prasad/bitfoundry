@@ -238,7 +238,8 @@ class EcosystemGraphBuilder {
             Object.assign(link, {
                 type: updatedLink.type,
                 label: updatedLink.label,
-                direction: updatedLink.direction
+                direction: updatedLink.direction,
+                desc: updatedLink.desc
             });
 
             this.graph.render(currentData);
@@ -287,6 +288,15 @@ class EcosystemGraphBuilder {
         
         // Restore link icons to info icon in view mode
         const links = this.graph.g.selectAll('.icon-interaction-info');
+        links.on('click', null).on('contextmenu', null);
+        links
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                if (this.graph.config.callbacks.onFlowClick) {
+                    this.graph.config.callbacks.onFlowClick(d);
+                }
+            });
+
         links.select('text')
             .text('i')
             .attr('dy', '3.5px');
