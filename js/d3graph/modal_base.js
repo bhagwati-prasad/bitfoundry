@@ -26,7 +26,7 @@ class BaseModal {
             document.body.appendChild(this.modal);
         }
 
-        this.modal.className = `modal-overlay${extraClass ? ` ${extraClass}` : ""}`;
+        this.modal.className = `modal-overlay ${extraClass ? ` ${extraClass}` : ""}`;
         this.modal.style.display = "none";
         this.modal.innerHTML = "";
 
@@ -93,6 +93,9 @@ class BaseModal {
 
     open() {
         if (!this.modal) return;
+        this.isMaximized = true;
+        this.modal.classList.add("modal-maximized");
+        this._syncToggleIcon();
         this.modal.style.display = "flex";
     }
 
@@ -124,6 +127,15 @@ class BaseModal {
         } else {
             this.toggleBtn.textContent = "⤢";
             this.toggleBtn.setAttribute("aria-label", "Maximize modal");
+        }
+    }
+
+    addFooterItem(element, { prepend = false } = {}) {
+        if (!this.footer || !element) return;
+        if (prepend && this.footer.firstChild) {
+            this.footer.insertBefore(element, this.footer.firstChild);
+        } else {
+            this.footer.appendChild(element);
         }
     }
 }

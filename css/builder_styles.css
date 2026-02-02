@@ -749,8 +749,13 @@ h1:focus {
     padding: 16px 20px;
     border-top: 1px solid #f1f5f9;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     gap: 10px;
+}
+
+.modal-footer .form-note {
+    flex: 1;
 }
 
 /* ==================== Property Editor Specific ==================== */
@@ -758,6 +763,38 @@ h1:focus {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-height: 0;
+}
+
+.property-editor-content .form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.property-editor-content .form-row > .form-group {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+.property-editor-content .form-row > .form-group:last-child {
+    flex: 0 0 auto;
+}
+
+.property-editor-content .form-row > .form-group:last-child .group-selector {
+    justify-content: flex-end;
+}
+
+.property-editor-content .form-group.form-group-grow {
+    flex: 1;
+    min-height: 0;
+}
+
+.property-editor-content .form-group.form-group-grow textarea.form-control {
+    flex: 1;
+    min-height: 0;
+    resize: none;
 }
 
 .form-group {

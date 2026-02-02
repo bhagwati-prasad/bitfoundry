@@ -88,15 +88,17 @@ class PropertyEditor extends BaseModal {
     _renderNodeForm() {
         const form = this.content;
         form.innerHTML = '';
+        this.footer?.querySelector('.form-note')?.remove();
 
         // ID (non-editable)
         this._addFormField(form, 'ID', 'text', this.currentData.id, 'node-id', true, true);
 
-        // Label
-        this._addFormField(form, 'Label', 'text', this.currentData.label, 'node-label');
-
-        // Group (dropdown with color swatches)
-        this._addGroupField(form);
+        // Label + Group in same row
+        const labelGroupRow = document.createElement('div');
+        labelGroupRow.className = 'form-row';
+        form.appendChild(labelGroupRow);
+        this._addFormField(labelGroupRow, 'Label', 'text', this.currentData.label, 'node-label');
+        this._addGroupField(labelGroupRow);
 
         // Description (textarea, accepts HTML)
         this._addTextareaField(form, 'Description (HTML)', this.currentData.desc || '', 'node-desc');
@@ -105,12 +107,13 @@ class PropertyEditor extends BaseModal {
         const note = document.createElement('p');
         note.className = 'form-note';
         note.innerHTML = '<small>💡 To change the default size for this group, use the Settings panel.</small>';
-        form.appendChild(note);
+        this.addFooterItem(note, { prepend: true });
     }
 
     _renderLinkForm() {
         const form = this.content;
         form.innerHTML = '';
+        this.footer?.querySelector('.form-note')?.remove();
 
         // ID (non-editable)
         this._addFormField(form, 'ID', 'text', this.currentData.id, 'link-id', true, true);
@@ -164,6 +167,9 @@ class PropertyEditor extends BaseModal {
     _addTextareaField(parent, label, value, id) {
         const group = document.createElement('div');
         group.className = 'form-group';
+        if (id === 'node-desc') {
+            group.classList.add('form-group-grow');
+        }
 
         const labelEl = document.createElement('label');
         labelEl.textContent = label;
