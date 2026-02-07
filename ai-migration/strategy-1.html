@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI-First Migration Strategy | BBPS Fintech</title>
+
+  <style>
+    /* ============================================================
+       CSS VARIABLES (STRICT THEME CONTROL)
+       ============================================================ */
+    :root {
+      /* Typography */
+      --font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+      --fs-xxl: 2.2rem;
+      --fs-xl: 1.6rem;
+      --fs-lg: 1.15rem;
+      --fs-md: 1rem;
+      --fs-sm: 0.9rem;
+      --fs-xs: 0.8rem;
+
+      --lh-tight: 1.15;
+      --lh-normal: 1.5;
+      --lh-loose: 1.7;
+
+      --fw-regular: 450;
+      --fw-medium: 550;
+      --fw-bold: 700;
+
+      /* Spacing */
+      --space-1: 6px;
+      --space-2: 10px;
+      --space-3: 14px;
+      --space-4: 18px;
+      --space-5: 24px;
+      --space-6: 32px;
+      --space-7: 44px;
+      --space-8: 60px;
+
+      /* Radius */
+      --r-xs: 8px;
+      --r-sm: 12px;
+      --r-md: 16px;
+      --r-lg: 20px;
+      --r-xl: 26px;
+
+      /* Layout */
+      --sidebar-width: 320px;
+      --header-height: 64px;
+      --max-content-width: 1100px;
+
+      /* Transitions */
+      --t-fast: 120ms;
+      --t-med: 220ms;
+      --t-slow: 380ms;
+
+      /* Shadows (Neumorphic Angular) */
+      --shadow-soft: 10px 10px 22px rgba(0,0,0,0.10), -10px -10px 22px rgba(255,255,255,0.6);
+      --shadow-soft-inset: inset 8px 8px 18px rgba(0,0,0,0.08), inset -8px -8px 18px rgba(255,255,255,0.7);
+      --shadow-card: 12px 12px 26px rgba(0,0,0,0.12), -12px -12px 26px rgba(255,255,255,0.65);
+
+      /* Borders */
+      --border: 1px solid rgba(0,0,0,0.08);
+      --border-strong: 1px solid rgba(0,0,0,0.12);
+
+      /* Theme Colors (Light default) */
+      --bg: #eef1f6;
+      --panel: #eef1f6;
+      --panel-2: #e7ebf2;
+
+      --text: #111827;
+      --text-muted: rgba(17, 24, 39, 0.72);
+      --text-faint: rgba(17, 24, 39, 0.55);
+
+      --accent: #2563eb;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+
+      --chip-bg: rgba(37, 99, 235, 0.12);
+      --chip-border: rgba(37, 99, 235, 0.18);
+
+      --kbd-bg: rgba(0,0,0,0.06);
+      --kbd-border: rgba(0,0,0,0.12);
+
+      --divider: rgba(0,0,0,0.08);
+
+      --focus: 0 0 0 4px rgba(37, 99, 235, 0.18);
+    }
+
+    /* Dark Mode Overrides */
+    [data-theme="dark"] {
+      --bg: #0b1220;
+      --panel: #0b1220;
+      --panel-2: #0f1a2e;
+
+      --text: rgba(255,255,255,0.92);
+      --text-muted: rgba(255,255,255,0.72);
+      --text-faint: rgba(255,255,255,0.55);
+
+      --accent: #60a5fa;
+      --accent-2: #34d399;
+      --danger: #fb7185;
+
+      --chip-bg: rgba(96, 165, 250, 0.14);
+      --chip-border: rgba(96, 165, 250, 0.22);
+
+      --kbd-bg: rgba(255,255,255,0.06);
+      --kbd-border: rgba(255,255,255,0.12);
+
+      --divider: rgba(255,255,255,0.08);
+
+      --border: 1px solid rgba(255,255,255,0.10);
+      --border-strong: 1px solid rgba(255,255,255,0.16);
+
+      --shadow-soft: 10px 10px 22px rgba(0,0,0,0.55), -10px -10px 22px rgba(255,255,255,0.05);
+      --shadow-soft-inset: inset 8px 8px 18px rgba(0,0,0,0.55), inset -8px -8px 18px rgba(255,255,255,0.04);
+      --shadow-card: 12px 12px 26px rgba(0,0,0,0.62), -12px -12px 26px rgba(255,255,255,0.04);
+
+      --focus: 0 0 0 4px rgba(96, 165, 250, 0.18);
+    }
+
+    /* ============================================================
+       BASE STYLES
+       ============================================================ */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-family);
+      font-size: var(--fs-md);
+      line-height: var(--lh-normal);
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: var(--header-height) 1fr;
+      grid-template-columns: 1fr;
+    }
+
+    /* ============================================================
+       HEADER
+       ============================================================ */
+    header {
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-5);
+      border-bottom: 1px solid var(--divider);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-2);
+      letter-spacing: -0.02em;
+    }
+
+    .brand .title {
+      font-weight: var(--fw-bold);
+      font-size: var(--fs-lg);
+    }
+
+    .brand .subtitle {
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+      font-weight: var(--fw-medium);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .btn {
+      border: var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      transition: transform var(--t-fast), box-shadow var(--t-med), opacity var(--t-med);
+      font-weight: var(--fw-medium);
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      user-select: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    .btn:active {
+      transform: translateY(0px) scale(0.98);
+      box-shadow: var(--shadow-soft-inset);
+    }
+
+    .btn:focus-visible {
+      outline: none;
+      box-shadow: var(--shadow-soft), var(--focus);
+    }
+
+    .btn .icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      opacity: 0.8;
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--chip-border);
+      background: var(--chip-bg);
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+      font-weight: var(--fw-medium);
+      user-select: none;
+    }
+
+    /* ============================================================
+       MAIN LAYOUT
+       ============================================================ */
+    .layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) 1fr;
+      height: calc(100vh - var(--header-height));
+      overflow: hidden;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--divider);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      padding: var(--space-4);
+      overflow: auto;
+      transition: width var(--t-slow), padding var(--t-slow);
+    }
+
+    .sidebar.collapsed {
+      width: 0;
+      padding: 0;
+      border-right: none;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+      gap: var(--space-3);
+    }
+
+    .sidebar-title {
+      font-weight: var(--fw-bold);
+      font-size: var(--fs-sm);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .slide-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding-bottom: var(--space-5);
+    }
+
+    .slide-thumb {
+      border-radius: var(--r-lg);
+      border: var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      padding: var(--space-3);
+      cursor: pointer;
+      transition: transform var(--t-fast), border var(--t-med), opacity var(--t-med);
+      position: relative;
+    }
+
+    .slide-thumb:hover {
+      transform: translateY(-2px);
+      opacity: 0.96;
+    }
+
+    .slide-thumb.active {
+      border: 1px solid rgba(37, 99, 235, 0.5);
+      box-shadow: var(--shadow-soft), 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .thumb-number {
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+      color: var(--text-faint);
+      margin-bottom: var(--space-2);
+    }
+
+    .thumb-title {
+      font-size: var(--fs-sm);
+      font-weight: var(--fw-bold);
+      line-height: var(--lh-tight);
+      margin-bottom: var(--space-2);
+    }
+
+    .thumb-desc {
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+      line-height: var(--lh-loose);
+      max-height: 3.2em;
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       SLIDE VIEW
+       ============================================================ */
+    .content {
+      overflow: hidden;
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .stage {
+      flex: 1;
+      border-radius: var(--r-xl);
+      border: var(--border);
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide-topbar {
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+
+    .slide-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .slide-meta .slide-title {
+      font-size: var(--fs-xl);
+      font-weight: var(--fw-bold);
+      line-height: var(--lh-tight);
+      letter-spacing: -0.02em;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slide-meta .slide-caption {
+      font-size: var(--fs-sm);
+      color: var(--text-muted);
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .slide-body {
+      padding: var(--space-6) var(--space-6);
+      overflow: auto;
+      flex: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-5);
+    }
+
+    .card {
+      border-radius: var(--r-xl);
+      border: var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      padding: var(--space-5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card h3 {
+      margin: 0 0 var(--space-3) 0;
+      font-size: var(--fs-lg);
+      letter-spacing: -0.01em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--text-muted);
+      line-height: var(--lh-loose);
+      font-size: var(--fs-md);
+    }
+
+    .card ul {
+      margin: var(--space-3) 0 0 0;
+      padding-left: 18px;
+      color: var(--text-muted);
+      line-height: var(--lh-loose);
+    }
+
+    .card li {
+      margin-bottom: var(--space-2);
+    }
+
+    .big-quote {
+      font-size: var(--fs-xxl);
+      font-weight: var(--fw-bold);
+      line-height: var(--lh-tight);
+      letter-spacing: -0.03em;
+      margin: 0 0 var(--space-4) 0;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .highlight {
+      color: var(--accent);
+      font-weight: var(--fw-bold);
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+    }
+
+    .badge {
+      font-size: var(--fs-xs);
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--chip-border);
+      background: var(--chip-bg);
+      color: var(--text);
+      font-weight: var(--fw-medium);
+    }
+
+    .badge.good {
+      border-color: rgba(34, 197, 94, 0.25);
+      background: rgba(34, 197, 94, 0.12);
+    }
+
+    .badge.warn {
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.10);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--divider);
+      margin: var(--space-4) 0;
+    }
+
+    /* ============================================================
+       FOOTER NAV (POWERPOINT STYLE)
+       ============================================================ */
+    .footer-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      padding: 0 var(--space-2);
+    }
+
+    .footer-left, .footer-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .progress {
+      flex: 1;
+      height: 12px;
+      border-radius: 999px;
+      border: var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft-inset);
+      overflow: hidden;
+      margin: 0 var(--space-4);
+      position: relative;
+    }
+
+    .progress > div {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), rgba(37, 99, 235, 0.45));
+      border-radius: 999px;
+      transition: width var(--t-slow);
+    }
+
+    .counter {
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .kbd {
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+      padding: 4px 8px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--kbd-border);
+      background: var(--kbd-bg);
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 980px) {
+      :root { --sidebar-width: 280px; }
+      .grid { grid-template-columns: 1fr; }
+      .slide-body { padding: var(--space-5); }
+    }
+
+    @media (max-width: 720px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: absolute; z-index: 20; width: var(--sidebar-width); height: calc(100vh - var(--header-height)); }
+      .sidebar.collapsed { transform: translateX(-110%); width: var(--sidebar-width); padding: var(--space-4); border-right: 1px solid var(--divider); }
+      .content { padding: var(--space-4); }
+      .slide-meta .slide-title { font-size: 1.25rem; }
+      .big-quote { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+
+<body data-theme="light">
+  <div class="app">
+    <header>
+      <div class="header-left">
+        <button class="btn" id="toggleSidebarBtn" title="Toggle Sidebar">
+          <span class="icon">☰</span>
+          Slides
+        </button>
+
+        <div class="brand">
+          <div class="title">AI-First Migration</div>
+          <div class="subtitle">BBPS Fintech | NestJS | GCP | PCI DSS</div>
+        </div>
+
+        <div class="pill" id="headerPill">Phase-driven SDLC Transformation</div>
+      </div>
+
+      <div class="header-actions">
+        <div class="kbd" title="Keyboard shortcuts">
+          ← → &nbsp; / &nbsp; Home End
+        </div>
+
+        <button class="btn" id="themeBtn" title="Toggle Light/Dark">
+          <span class="icon">◐</span>
+          Theme
+        </button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Slide Navigator</div>
+          <div class="pill" id="slideCountPill">0 Slides</div>
+        </div>
+
+        <div class="slide-list" id="slideList"></div>
+      </aside>
+
+      <main class="content">
+        <section class="stage">
+          <div class="slide-topbar">
+            <div class="slide-meta">
+              <h1 class="slide-title" id="slideTitle">Loading...</h1>
+              <p class="slide-caption" id="slideCaption">Please wait</p>
+            </div>
+
+            <div class="badge-row" id="slideBadges"></div>
+          </div>
+
+          <div class="slide-body" id="slideBody"></div>
+
+          <div class="divider"></div>
+
+          <div class="footer-nav">
+            <div class="footer-left">
+              <button class="btn" id="prevBtn" title="Previous Slide (←)">
+                <span class="icon">◀</span> Prev
+              </button>
+
+              <button class="btn" id="nextBtn" title="Next Slide (→)">
+                Next <span class="icon">▶</span>
+              </button>
+            </div>
+
+            <div class="progress" title="Slide Progress">
+              <div id="progressBar"></div>
+            </div>
+
+            <div class="footer-right">
+              <div class="counter" id="slideCounter">0 / 0</div>
+              <button class="btn" id="fullscreenBtn" title="Fullscreen">
+                <span class="icon">⛶</span> Fullscreen
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       SLIDES DATA (AI-FIRST MIGRATION DECK)
+       ============================================================ */
+    const slides = [
+      {
+        title: "AI-First Migration: The Executive Definition",
+        caption: "Not an AI coding initiative — an SDLC maturity transformation.",
+        badges: ["Quality", "Scalability", "Security", "Compliance"],
+        preview: "AI-first = migration from tribal knowledge to auditable engineering.",
+        content: `
+          <p class="big-quote">
+            “AI-first migration is the shift from manual engineering to
+            <span class="highlight">policy-driven engineering</span>.”
+          </p>
+
+          <div class="grid">
+            <div class="card">
+              <h3>What it is</h3>
+              <p>
+                A structured SDLC model where every change is backed by
+                standardized documentation, test artifacts, security checks, and
+                traceable deployment evidence.
+              </p>
+              <div class="badge-row">
+                <span class="badge good">Standard Templates</span>
+                <span class="badge good">CI/CD Gates</span>
+                <span class="badge good">Audit Evidence</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>What it is not</h3>
+              <ul>
+                <li>Not “ChatGPT writes code faster”.</li>
+                <li>Not replacing developers.</li>
+                <li>Not random prompt usage without governance.</li>
+                <li>Not an experimental initiative.</li>
+              </ul>
+              <div class="badge-row">
+                <span class="badge warn">Avoid Hallucination Risk</span>
+                <span class="badge warn">Avoid Data Leakage</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      {
+        title: "Current State: Key Pain Points",
+        caption: "Hybrid architecture + weak observability + monthly releases + audit friction.",
+        badges: ["Hybrid", "GCP", "VM Drift", "Logs"],
+        preview: "All issues: bugs, slow releases, poor docs, audit pain, scattered logs.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Engineering Issues</h3>
+              <ul>
+                <li>Hybrid deployment: containers + VMs → inconsistent operations.</li>
+                <li>Monthly releases → large batch risk & slow feature velocity.</li>
+                <li>Architecture drift across services/modules.</li>
+                <li>Regression issues due to limited test baseline.</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Compliance & Audit Issues</h3>
+              <ul>
+                <li>Logs scattered across services and inconsistent format.</li>
+                <li>Some critical logs missing or incorrectly implemented.</li>
+                <li>Hard to produce audit evidence quickly.</li>
+                <li>PCI DSS exists but not embedded into SDLC process.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>BBPS Risk Multipliers</h3>
+            <p>
+              BBPS systems require strict workflow reliability: bill fetch, payment,
+              reversal, complaint, settlement, reconciliation. Without formal workflow/state
+              definitions, production debugging becomes expensive and audit traceability weak.
+            </p>
+          </div>
+        `
+      },
+
+      {
+        title: "The AI-First Workflow Model",
+        caption: "Replace ad-hoc development with structured artifact generation.",
+        badges: ["Docs", "Tests", "Stubs", "CI/CD"],
+        preview: "Ticket → Document Pack → AI Tests → AI Stubs → Dev → Gates → Deploy.",
+        content: `
+          <div class="card">
+            <h3>Traditional SDLC</h3>
+            <p class="muted">
+              Ticket → Code → Debug → Deploy → Patch → Hotfix → Repeat
+            </p>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>AI-First SDLC</h3>
+            <p class="muted">
+              Ticket → Document Pack → AI-Generated Tests → AI Code Scaffolds →
+              Developer Implementation → CI/CD Policy Gates → Deploy → Audit Evidence
+            </p>
+
+            <div class="badge-row">
+              <span class="badge good">Traceability</span>
+              <span class="badge good">Predictability</span>
+              <span class="badge good">Audit Readiness</span>
+              <span class="badge good">Secure-by-Design</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Why this matters for BBPS</h3>
+            <p>
+              Workflow-heavy systems require repeatable behavior. AI-first ensures
+              idempotency, retries, logging, and state transitions are standardized
+              before implementation.
+            </p>
+          </div>
+        `
+      },
+
+      {
+        title: "Document Pack per Task (The Core Enforcement Model)",
+        caption: "Every ticket produces a structured artifact bundle.",
+        badges: ["PRD", "SRS", "ADR", "Threat Model"],
+        preview: "Level-based documentation pack: bugfix, feature, architecture change.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Level 1: Bugfix / Small Change</h3>
+              <ul>
+                <li>Task Summary (1 page)</li>
+                <li>Expected Behavior</li>
+                <li>Edge Cases</li>
+                <li>AI-generated unit tests</li>
+              </ul>
+              <div class="badge-row">
+                <span class="badge good">Fast</span>
+                <span class="badge good">Minimal</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Level 2: Feature / Module</h3>
+              <ul>
+                <li>PRD-lite</li>
+                <li>SRS-lite</li>
+                <li>OpenAPI Contract</li>
+                <li>Logging Plan</li>
+                <li>Test Plan</li>
+              </ul>
+              <div class="badge-row">
+                <span class="badge good">Repeatable</span>
+                <span class="badge good">Auditable</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Level 3: System / Architecture Change</h3>
+            <ul>
+              <li>Full PRD</li>
+              <li>Full SRS</li>
+              <li>ADR series (decision trail)</li>
+              <li>Threat Model (PCI aligned)</li>
+              <li>Observability Plan (logs/metrics/traces)</li>
+            </ul>
+
+            <div class="badge-row">
+              <span class="badge good">ISO-ready</span>
+              <span class="badge good">PCI-ready</span>
+              <span class="badge good">Board-ready</span>
+            </div>
+          </div>
+        `
+      },
+
+      {
+        title: "Pillars of AI-First Migration",
+        caption: "Quality, Scalability, Security — with measurable outcomes.",
+        badges: ["Engineering", "Ops", "Risk"],
+        preview: "3 pillars: quality improvement, scalability improvement, security/compliance.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>1) Quality Improvement</h3>
+              <ul>
+                <li>Architecture consistency using ADRs</li>
+                <li>Standard module structure (NestJS patterns)</li>
+                <li>Automated test generation for regression prevention</li>
+                <li>Reduced ambiguity using PRD/SRS artifacts</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>2) Scalability Improvement</h3>
+              <ul>
+                <li>Clear service boundaries & modularization</li>
+                <li>Performance test plans generated by AI</li>
+                <li>Repeatable deployment patterns (container-first)</li>
+                <li>Improved observability for bottleneck detection</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>3) Security & Compliance Improvement</h3>
+            <ul>
+              <li>Threat models generated per module</li>
+              <li>PCI DSS checklists embedded into SDLC</li>
+              <li>Secure coding review enforcement</li>
+              <li>Audit evidence auto-generated from artifacts</li>
+            </ul>
+
+            <div class="badge-row">
+              <span class="badge good">Security-by-Design</span>
+              <span class="badge good">Audit Trail</span>
+              <span class="badge good">Reduced Breach Risk</span>
+            </div>
+          </div>
+        `
+      },
+
+      {
+        title: "Phase 0: Governance Setup (2–3 weeks)",
+        caption: "Make AI safe, controlled, and standardized before scaling adoption.",
+        badges: ["Policy", "Templates", "Definition of Done"],
+        preview: "AI policy, templates, prompt library, DoD updates.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Primary Goal</h3>
+              <p>
+                Establish governance so AI usage becomes structured,
+                PCI-safe, and repeatable across teams.
+              </p>
+              <div class="badge-row">
+                <span class="badge good">Safe Adoption</span>
+                <span class="badge good">Low Resistance</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Deliverables</h3>
+              <ul>
+                <li>AI Usage Policy (PCI-safe prompt rules)</li>
+                <li>PRD-lite / SRS-lite templates</li>
+                <li>ADR template</li>
+                <li>Threat model template</li>
+                <li>Logging & observability template</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Definition of Done (Updated)</h3>
+            <p class="muted">
+              No PR merged without Document Pack + Tests + Logging Plan compliance.
+            </p>
+          </div>
+        `
+      },
+
+      {
+        title: "Phase 1 & 2: Documentation-First + Testing Baseline",
+        caption: "Stop ambiguity. Reduce regressions. Enable faster release cycles.",
+        badges: ["Docs", "Jest", "Contract Tests", "CI"],
+        preview: "PRD/SRS per ticket + AI unit tests + CI coverage gates.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Phase 1: Documentation-First (Month 1)</h3>
+              <ul>
+                <li>Mandatory PRD-lite + SRS-lite per ticket</li>
+                <li>ADR for all architectural decisions</li>
+                <li>AI generates edge cases & failure scenarios</li>
+                <li>Standardize retry/idempotency requirements</li>
+              </ul>
+              <div class="badge-row">
+                <span class="badge good">Clarity</span>
+                <span class="badge good">Reduced Rework</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Phase 2: Testing Baseline (Month 2)</h3>
+              <ul>
+                <li>AI-generated Jest unit tests per module</li>
+                <li>Contract testing (OpenAPI validation)</li>
+                <li>CI enforcement: test gates + coverage baseline</li>
+                <li>Regression suite expansion sprint-by-sprint</li>
+              </ul>
+              <div class="badge-row">
+                <span class="badge good">Regression Control</span>
+                <span class="badge good">Release Confidence</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Expected Impact</h3>
+            <p class="muted">
+              Monthly releases can shift towards bi-weekly releases with controlled risk.
+            </p>
+          </div>
+        `
+      },
+
+      {
+        title: "Phase 3: Standardization & Refactoring (Month 3–4)",
+        caption: "Make the NestJS codebase modular, consistent, and scalable.",
+        badges: ["NestJS", "Clean Modules", "Error Handling"],
+        preview: "Standard module scaffolds + DTO validation + consistent patterns.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Key Actions</h3>
+              <ul>
+                <li>AI-generated scaffolding for NestJS modules</li>
+                <li>Standard DTO validation strategy</li>
+                <li>Unified exception filter + error response structure</li>
+                <li>Consistent repository/service layering</li>
+                <li>Idempotency middleware standardization</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Architecture Outcomes</h3>
+              <ul>
+                <li>Reduced duplication</li>
+                <li>Predictable onboarding experience</li>
+                <li>Clear boundaries between domains</li>
+                <li>Better scalability through clean separation</li>
+              </ul>
+
+              <div class="badge-row">
+                <span class="badge good">Maintainability</span>
+                <span class="badge good">Developer Velocity</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>BBPS Domain Modules (Recommended)</h3>
+            <div class="badge-row">
+              <span class="badge">Bill Fetch</span>
+              <span class="badge">Payment</span>
+              <span class="badge">Reversal</span>
+              <span class="badge">Complaint</span>
+              <span class="badge">Settlement</span>
+              <span class="badge">Reconciliation</span>
+            </div>
+          </div>
+        `
+      },
+
+      {
+        title: "Phase 4: Observability & Audit Readiness (Month 4–5)",
+        caption: "Fix logs. Fix debugging. Fix audit evidence generation.",
+        badges: ["Logging", "Tracing", "Correlation ID", "GCP"],
+        preview: "Standard log format + correlation IDs + OpenTelemetry + centralized pipeline.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Primary Goal</h3>
+              <p>
+                Observability becomes standardized, searchable, and audit-friendly.
+                This directly solves current audit difficulty.
+              </p>
+              <div class="badge-row">
+                <span class="badge good">Audit Speed</span>
+                <span class="badge good">Incident Speed</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Mandatory Logging Fields</h3>
+              <ul>
+                <li><b>correlationId</b></li>
+                <li><b>txnId</b></li>
+                <li><b>bbpsRefId</b></li>
+                <li><b>serviceName</b></li>
+                <li><b>stateTransition</b></li>
+                <li><b>errorCode</b></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Implementation Actions</h3>
+            <ul>
+              <li>Centralize logs into GCP Logging / BigQuery</li>
+              <li>Introduce OpenTelemetry traces across services</li>
+              <li>Define “logging plan” as part of SRS-lite</li>
+              <li>AI generates logging instrumentation checklist per ticket</li>
+            </ul>
+          </div>
+        `
+      },
+
+      {
+        title: "Phase 5: Security-by-Design (Month 5–6)",
+        caption: "Embed PCI DSS controls directly into SDLC workflows.",
+        badges: ["PCI DSS", "Threat Model", "CI Gates", "Scanning"],
+        preview: "Threat models + checklists + CI scanning + evidence generation.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Security Enforcement Model</h3>
+              <ul>
+                <li>Threat model mandatory for Level-3 changes</li>
+                <li>AI-generated PCI DSS checklist per module</li>
+                <li>Secure coding checklist embedded into PR reviews</li>
+                <li>Audit traceability mapping created automatically</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>CI/CD Security Gates</h3>
+              <ul>
+                <li>Dependency vulnerability scanning</li>
+                <li>Secret detection</li>
+                <li>Container image scanning</li>
+                <li>Approval workflow for high-risk deployments</li>
+              </ul>
+
+              <div class="badge-row">
+                <span class="badge good">Reduced Breach Risk</span>
+                <span class="badge good">Compliance Embedded</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Audit Evidence Output</h3>
+            <p class="muted">
+              PRD → SRS → ADR → Code → Unit Tests → Deployment Record → Logs/Trace Evidence
+            </p>
+          </div>
+        `
+      },
+
+      {
+        title: "BBPS-Specific: Workflow State Machine Standardization",
+        caption: "Critical missing capability today — solve it with AI-first discipline.",
+        badges: ["State Machine", "Idempotency", "Retries", "Reliability"],
+        preview: "Define workflows first, then generate transition tests and instrumentation.",
+        content: `
+          <p class="big-quote">
+            “BBPS systems are workflow-driven. Without a formal state machine,
+            production becomes guesswork.”
+          </p>
+
+          <div class="grid">
+            <div class="card">
+              <h3>Workflows to Formalize</h3>
+              <ul>
+                <li>Bill Fetch lifecycle</li>
+                <li>Payment lifecycle</li>
+                <li>Reversal lifecycle</li>
+                <li>Complaint lifecycle</li>
+                <li>Settlement lifecycle</li>
+                <li>Reconciliation lifecycle</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>AI-Generated Artifacts</h3>
+              <ul>
+                <li>State machine definitions (JSON/YAML)</li>
+                <li>State transition unit tests</li>
+                <li>Retry + idempotency test scenarios</li>
+                <li>Observability hooks per transition</li>
+              </ul>
+              <div class="badge-row">
+                <span class="badge good">NPCI-grade Reliability</span>
+                <span class="badge good">Predictable Debugging</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      {
+        title: "KPIs: How Success Will Be Measured",
+        caption: "Metrics that leadership, auditors, and engineers will trust.",
+        badges: ["DORA", "Quality", "Security", "Observability"],
+        preview: "Release frequency, change failure rate, MTTR, audit readiness score.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Delivery Metrics (DORA)</h3>
+              <ul>
+                <li>Deployment frequency ↑</li>
+                <li>Lead time for change ↓</li>
+                <li>Change failure rate ↓</li>
+                <li>Mean time to recovery (MTTR) ↓</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Quality Metrics</h3>
+              <ul>
+                <li>Regression bugs ↓</li>
+                <li>Unit test coverage ↑</li>
+                <li>Hotfix count ↓</li>
+                <li>Architecture drift incidents ↓</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="grid">
+            <div class="card">
+              <h3>Security Metrics</h3>
+              <ul>
+                <li>Vulnerabilities detected pre-prod ↑</li>
+                <li>Secrets leakage incidents → 0</li>
+                <li>Audit observations ↓</li>
+                <li>PCI compliance score ↑</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Observability Metrics</h3>
+              <ul>
+                <li>% APIs with structured logs ↑</li>
+                <li>% requests with correlationId ↑</li>
+                <li>MTTD (detect) ↓</li>
+                <li>Incident RCA time ↓</li>
+              </ul>
+            </div>
+          </div>
+        `
+      },
+
+      {
+        title: "Risks & Mitigation (Credibility Slide)",
+        caption: "AI-first works only when governance is enforced.",
+        badges: ["Hallucination", "Data Safety", "Control"],
+        preview: "Hallucinations, leakage, dependency risks + mitigations.",
+        content: `
+          <div class="grid">
+            <div class="card">
+              <h3>Key Risks</h3>
+              <ul>
+                <li>AI hallucination causing incorrect logic</li>
+                <li>Sensitive data leakage via prompts</li>
+                <li>Over-dependence on AI without human review</li>
+                <li>Architecture suggestions that don’t fit production constraints</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Mitigation Controls</h3>
+              <ul>
+                <li>Human approval always required</li>
+                <li>Strict prompt governance + sanitization</li>
+                <li>Golden templates + lint rules + CI gates</li>
+                <li>ADR approval for high-impact decisions</li>
+              </ul>
+
+              <div class="badge-row">
+                <span class="badge good">Trustworthy Adoption</span>
+                <span class="badge good">Audit-friendly</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Adoption Rule</h3>
+            <p class="muted">
+              “AI reduces developer workload first, then governance is enforced.”
+            </p>
+          </div>
+        `
+      },
+
+      {
+        title: "Final Blueprint: AI-First Definition of Done",
+        caption: "The enforcement layer that turns strategy into reality.",
+        badges: ["DoD", "Compliance", "Traceability", "CI/CD"],
+        preview: "PRD/SRS/ADR + tests + logging + threat model + deployment evidence.",
+        content: `
+          <p class="big-quote">
+            “A feature is not done until it is <span class="highlight">auditable</span>.”
+          </p>
+
+          <div class="card">
+            <h3>Definition of Done (AI-First)</h3>
+            <ul>
+              <li>PRD-lite + SRS-lite exists</li>
+              <li>ADR exists (if architecture decision made)</li>
+              <li>OpenAPI contract updated</li>
+              <li>Jest unit tests generated + passing</li>
+              <li>Contract tests included (where applicable)</li>
+              <li>Structured logs implemented (correlationId + txnId + bbpsRefId)</li>
+              <li>Threat model checklist passed (PCI DSS aligned)</li>
+              <li>CI/CD policy gates passed</li>
+              <li>Deployment record stored for audit</li>
+            </ul>
+
+            <div class="badge-row">
+              <span class="badge good">NPCI-grade SDLC</span>
+              <span class="badge good">ISO-ready</span>
+              <span class="badge good">PCI-ready</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <h3>Closing Statement</h3>
+            <p class="muted">
+              AI-first migration is our path to predictable delivery, scalable architecture,
+              and compliance-ready engineering maturity.
+            </p>
+          </div>
+        `
+      }
+    ];
+
+    /* ============================================================
+       APP STATE
+       ============================================================ */
+    let currentSlideIndex = 0;
+    let sidebarCollapsed = false;
+
+    const slideListEl = document.getElementById("slideList");
+    const slideTitleEl = document.getElementById("slideTitle");
+    const slideCaptionEl = document.getElementById("slideCaption");
+    const slideBodyEl = document.getElementById("slideBody");
+    const slideBadgesEl = document.getElementById("slideBadges");
+    const slideCounterEl = document.getElementById("slideCounter");
+    const progressBarEl = document.getElementById("progressBar");
+
+    const slideCountPill = document.getElementById("slideCountPill");
+
+    const sidebarEl = document.getElementById("sidebar");
+    const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
+    const themeBtn = document.getElementById("themeBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    /* ============================================================
+       RENDER SIDEBAR THUMBNAILS
+       ============================================================ */
+    function renderSlideList() {
+      slideListEl.innerHTML = "";
+
+      slides.forEach((s, idx) => {
+        const el = document.createElement("div");
+        el.className = "slide-thumb";
+        el.dataset.index = idx;
+
+        el.innerHTML = `
+          <div class="thumb-number">Slide ${idx + 1}</div>
+          <div class="thumb-title">${escapeHtml(s.title)}</div>
+          <div class="thumb-desc">${escapeHtml(s.preview || s.caption || "")}</div>
+        `;
+
+        el.addEventListener("click", () => {
+          goToSlide(idx);
+        });
+
+        slideListEl.appendChild(el);
+      });
+
+      slideCountPill.textContent = `${slides.length} Slides`;
+    }
+
+    /* ============================================================
+       RENDER CURRENT SLIDE
+       ============================================================ */
+    function renderSlide() {
+      const slide = slides[currentSlideIndex];
+
+      slideTitleEl.textContent = slide.title;
+      slideCaptionEl.textContent = slide.caption || "";
+      slideBodyEl.innerHTML = slide.content || "";
+
+      slideBadgesEl.innerHTML = "";
+      (slide.badges || []).forEach(b => {
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = b;
+        slideBadgesEl.appendChild(badge);
+      });
+
+      slideCounterEl.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
+
+      const progress = ((currentSlideIndex + 1) / slides.length) * 100;
+      progressBarEl.style.width = `${progress}%`;
+
+      updateActiveThumb();
+      updateButtons();
+    }
+
+    function updateActiveThumb() {
+      const thumbs = document.querySelectorAll(".slide-thumb");
+      thumbs.forEach(t => t.classList.remove("active"));
+
+      const active = document.querySelector(`.slide-thumb[data-index="${currentSlideIndex}"]`);
+      if (active) active.classList.add("active");
+    }
+
+    function updateButtons() {
+      prevBtn.disabled = currentSlideIndex === 0;
+      nextBtn.disabled = currentSlideIndex === slides.length - 1;
+
+      prevBtn.style.opacity = prevBtn.disabled ? "0.5" : "1";
+      nextBtn.style.opacity = nextBtn.disabled ? "0.5" : "1";
+      prevBtn.style.cursor = prevBtn.disabled ? "not-allowed" : "pointer";
+      nextBtn.style.cursor = nextBtn.disabled ? "not-allowed" : "pointer";
+    }
+
+    function goToSlide(index) {
+      if (index < 0 || index >= slides.length) return;
+      currentSlideIndex = index;
+      renderSlide();
+    }
+
+    function nextSlide() {
+      if (currentSlideIndex < slides.length - 1) {
+        currentSlideIndex++;
+        renderSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlideIndex > 0) {
+        currentSlideIndex--;
+        renderSlide();
+      }
+    }
+
+    /* ============================================================
+       THEME HANDLING (STRICT CSS VARIABLES)
+       ============================================================ */
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute("data-theme");
+      const next = current === "dark" ? "light" : "dark";
+      body.setAttribute("data-theme", next);
+      localStorage.setItem("ppt-theme", next);
+    }
+
+    function loadTheme() {
+      const saved = localStorage.getItem("ppt-theme");
+      if (saved === "dark" || saved === "light") {
+        document.body.setAttribute("data-theme", saved);
+      }
+    }
+
+    /* ============================================================
+       SIDEBAR COLLAPSE
+       ============================================================ */
+    function toggleSidebar() {
+      sidebarCollapsed = !sidebarCollapsed;
+      sidebarEl.classList.toggle("collapsed", sidebarCollapsed);
+    }
+
+    /* ============================================================
+       FULLSCREEN
+       ============================================================ */
+    async function toggleFullscreen() {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (e) {
+        alert("Fullscreen not available in this browser context.");
+      }
+    }
+
+    /* ============================================================
+       KEYBOARD CONTROLS (POWERPOINT-LIKE)
+       ============================================================ */
+    function onKeyDown(e) {
+      const key = e.key.toLowerCase();
+
+      if (key === "arrowright" || key === "pagedown") {
+        e.preventDefault();
+        nextSlide();
+      }
+
+      if (key === "arrowleft" || key === "pageup") {
+        e.preventDefault();
+        prevSlide();
+      }
+
+      if (key === "home") {
+        e.preventDefault();
+        goToSlide(0);
+      }
+
+      if (key === "end") {
+        e.preventDefault();
+        goToSlide(slides.length - 1);
+      }
+
+      if (key === "f") {
+        e.preventDefault();
+        toggleFullscreen();
+      }
+
+      if (key === "s") {
+        e.preventDefault();
+        toggleSidebar();
+      }
+
+      if (key === "t") {
+        e.preventDefault();
+        toggleTheme();
+      }
+    }
+
+    /* ============================================================
+       HELPERS
+       ============================================================ */
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    /* ============================================================
+       INIT
+       ============================================================ */
+    function init() {
+      loadTheme();
+      renderSlideList();
+      renderSlide();
+
+      prevBtn.addEventListener("click", prevSlide);
+      nextBtn.addEventListener("click", nextSlide);
+      toggleSidebarBtn.addEventListener("click", toggleSidebar);
+      themeBtn.addEventListener("click", toggleTheme);
+      fullscreenBtn.addEventListener("click", toggleFullscreen);
+
+      window.addEventListener("keydown", onKeyDown);
+    }
+
+    init();
+  </script>
+</body>
+</html>
