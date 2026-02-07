@@ -1,0 +1,1519 @@
+{
+  "schemaVersion": "1.0.0",
+  "graph": {
+    "uuid": "8b7a3c1e-2d52-4f66-8c5b-0b7c8c6f4d31",
+    "title": "BBPS COU/BOU Transaction State Machine Graph",
+    "description": "Comprehensive BBPS transaction lifecycle state machine covering Bill Fetch, Payment, Status Inquiry, Refund/Reversal, Settlement, Reconciliation, and Complaint flows. Designed for COU/BOU systems with idempotency, audit, SLA monitoring, and operational recovery.",
+    "type": "STATE_MACHINE_GRAPH",
+    "domain": "BBPS",
+    "subDomain": "COU_BOU",
+    "environment": "PRODUCTION_READY",
+    "metadata": {
+      "createdAt": "2026-02-07T00:00:00Z",
+      "updatedAt": "2026-02-07T00:00:00Z",
+      "createdBy": "SYSTEM_ARCHITECT",
+      "updatedBy": "SYSTEM_ARCHITECT",
+      "icon": "git-branch",
+      "tags": ["bbps", "npcI", "cou", "bou", "ledger", "payment", "state-machine"],
+      "status": "ACTIVE",
+      "compliance": {
+        "bbpsAligned": true,
+        "pciDssAligned": true,
+        "iso27001Aligned": true
+      }
+    }
+  },
+
+  "globalProperties": {
+    "idempotency": {
+      "enabled": true,
+      "idempotencyKeyRequiredFor": ["PAYMENT_INITIATED", "REFUND_INITIATED", "REVERSAL_INITIATED"],
+      "strategy": "DB_UNIQUE_CONSTRAINT",
+      "ttlSeconds": 86400
+    },
+    "timeouts": {
+      "bbpsRequestTimeoutMs": 30000,
+      "internalServiceTimeoutMs": 5000,
+      "maxRetries": 3,
+      "retryBackoffStrategy": "EXPONENTIAL_WITH_JITTER"
+    },
+    "slaPolicies": {
+      "pendingPaymentMaxAgeMinutes": 1440,
+      "pendingRefundMaxAgeMinutes": 2880,
+      "complaintSlaHoursDefault": 72
+    },
+    "audit": {
+      "auditLogImmutable": true,
+      "storePayloadHashes": true,
+      "storeRequestResponsePairs": true,
+      "storeActorContext": true
+    }
+  },
+
+  "states": [
+    {
+      "uuid": "1b9b1e65-77b1-4e4a-88f7-9d3d1baf2a55",
+      "key": "TXN_CREATED",
+      "title": "Transaction Created",
+      "description": "Initial system state after transaction object is created. No bill fetch/payment executed yet.",
+      "category": "CORE",
+      "isInitial": true,
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": false,
+        "requiresBBPSReference": false,
+        "requiresCustomerConsent": false,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "circle-plus",
+        "tags": ["init", "core"]
+      }
+    },
+
+    {
+      "uuid": "c0d3d11d-64d6-4e2b-8a70-3c0b7b3f9b1f",
+      "key": "BILL_FETCH_INITIATED",
+      "title": "Bill Fetch Initiated",
+      "description": "Customer/agent initiates bill fetch request with consumer parameters.",
+      "category": "BILL_FETCH",
+      "isInitial": false,
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": false,
+        "requiresBBPSReference": false,
+        "allowedActors": ["CUSTOMER", "AGENT", "SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "file-search",
+        "tags": ["bill", "fetch"]
+      }
+    },
+    {
+      "uuid": "8b4d7c6c-0bb5-4d65-86d7-10b79d9e5d0d",
+      "key": "BILL_FETCH_REQUEST_SENT",
+      "title": "Bill Fetch Request Sent",
+      "description": "Bill fetch request sent to BBPS/biller endpoint.",
+      "category": "BILL_FETCH",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": false,
+        "requiresBBPSReference": false,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "send",
+        "tags": ["bbps", "integration"]
+      }
+    },
+    {
+      "uuid": "a9a8db0f-56d3-4b1f-98e1-6c6e2f6c1f44",
+      "key": "BILL_FETCH_SUCCESS",
+      "title": "Bill Fetch Success",
+      "description": "Bill details successfully fetched and validated.",
+      "category": "BILL_FETCH",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": false,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["bill", "validated"]
+      }
+    },
+    {
+      "uuid": "8a1e65b1-8c3f-4b5c-9d52-ec5d4a4b2f91",
+      "key": "BILL_FETCH_FAILED",
+      "title": "Bill Fetch Failed",
+      "description": "Bill fetch failed due to invalid parameters, biller error, or BBPS rejection.",
+      "category": "BILL_FETCH",
+      "isTerminal": true,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-circle",
+        "tags": ["bill", "error"]
+      }
+    },
+    {
+      "uuid": "6e2f2b62-ffcc-4b5e-b45f-51a4e9f1d1e3",
+      "key": "BILL_FETCH_TIMEOUT",
+      "title": "Bill Fetch Timeout",
+      "description": "Bill fetch request timed out; bill status unknown.",
+      "category": "BILL_FETCH",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "clock",
+        "tags": ["timeout", "bill"]
+      }
+    },
+
+    {
+      "uuid": "c8cdd2b1-49d6-4e6b-8b54-5e8f8c2f3c6a",
+      "key": "PAYMENT_INITIATED",
+      "title": "Payment Initiated",
+      "description": "Customer/agent initiates bill payment request. Idempotency key must be validated.",
+      "category": "PAYMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "requiresIdempotencyKey": true,
+        "requiresCustomerConsent": true,
+        "allowedActors": ["CUSTOMER", "AGENT", "SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "credit-card",
+        "tags": ["payment", "init"]
+      }
+    },
+    {
+      "uuid": "5d8f1c6a-1f2c-4c1b-9b67-7f4d8b2c9a0f",
+      "key": "PAYMENT_VALIDATED",
+      "title": "Payment Validated",
+      "description": "Payment request validated internally: biller rules, amount rules, channel validation, wallet/bank validation, and fraud checks.",
+      "category": "PAYMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "shield-check",
+        "tags": ["validation", "fraud-check"]
+      }
+    },
+    {
+      "uuid": "bb4b2c2e-6d5f-44e5-bd3d-4f5e1a6c9b3a",
+      "key": "PAYMENT_REQUEST_SENT_TO_BBPS",
+      "title": "Payment Request Sent to BBPS",
+      "description": "Payment request sent to BBPS gateway / NPCI rails / biller endpoint.",
+      "category": "PAYMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "requiresBBPSReference": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "send-horizontal",
+        "tags": ["bbps", "payment"]
+      }
+    },
+    {
+      "uuid": "3a7f6d3a-3b3c-4a2f-bf9e-7c2d3c9f1d1a",
+      "key": "PAYMENT_PENDING",
+      "title": "Payment Pending",
+      "description": "Payment status is uncertain due to timeout or delayed confirmation. Must be resolved via status inquiry.",
+      "category": "PAYMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "requiresStatusInquiry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "hourglass",
+        "tags": ["pending", "inquiry-required"]
+      }
+    },
+    {
+      "uuid": "f5a7e9b0-3d4e-4c1f-8b6a-9d2c3f7b8e1a",
+      "key": "PAYMENT_SUCCESS",
+      "title": "Payment Success",
+      "description": "BBPS confirmed payment success. This is a terminal outcome for payment flow, but settlement/reconciliation continues.",
+      "category": "PAYMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "requiresBBPSReference": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "badge-check",
+        "tags": ["success", "payment"]
+      }
+    },
+    {
+      "uuid": "9c3b2a1d-6f4e-4c3a-9b2f-8d1c7a2e5b3f",
+      "key": "PAYMENT_FAILED",
+      "title": "Payment Failed",
+      "description": "BBPS confirmed payment failure. No settlement occurs.",
+      "category": "PAYMENT",
+      "isTerminal": true,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-octagon",
+        "tags": ["failed", "payment"]
+      }
+    },
+    {
+      "uuid": "5b1d2f7c-4a3e-4d5f-9b2a-7c8e1d2f3a4b",
+      "key": "PAYMENT_TIMEOUT",
+      "title": "Payment Timeout",
+      "description": "Payment request timed out before response from BBPS. Must transition into pending resolution workflow.",
+      "category": "PAYMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "requiresStatusInquiry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "clock-alert",
+        "tags": ["timeout", "payment"]
+      }
+    },
+
+    {
+      "uuid": "7c2a8b1d-4f6e-4a9b-8c3d-1e2f3a4b5c6d",
+      "key": "STATUS_INQUIRY_INITIATED",
+      "title": "Status Inquiry Initiated",
+      "description": "Status inquiry initiated for a pending or uncertain payment.",
+      "category": "STATUS_INQUIRY",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": false,
+        "requiresBBPSReference": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "search",
+        "tags": ["inquiry", "status"]
+      }
+    },
+    {
+      "uuid": "9f1b3c2d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      "key": "STATUS_INQUIRY_SENT",
+      "title": "Status Inquiry Sent",
+      "description": "Status inquiry request sent to BBPS for transaction confirmation.",
+      "category": "STATUS_INQUIRY",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "requiresBBPSReference": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "send",
+        "tags": ["inquiry", "bbps"]
+      }
+    },
+    {
+      "uuid": "c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f",
+      "key": "STATUS_INQUIRY_SUCCESS",
+      "title": "Status Inquiry Success",
+      "description": "Status inquiry returned a valid result (SUCCESS/FAILED/PENDING).",
+      "category": "STATUS_INQUIRY",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "requiresBBPSReference": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check",
+        "tags": ["inquiry", "resolved"]
+      }
+    },
+    {
+      "uuid": "d7e8f9a0-b1c2-3d4e-5f6a-7b8c9d0e1f2a",
+      "key": "STATUS_INQUIRY_FAILED",
+      "title": "Status Inquiry Failed",
+      "description": "Status inquiry failed due to BBPS error, invalid reference, or integration issue.",
+      "category": "STATUS_INQUIRY",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "requiresBBPSReference": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x",
+        "tags": ["inquiry", "failed"]
+      }
+    },
+
+    {
+      "uuid": "b7d2c9e1-3f4a-4b5c-8d6e-7f8a9b0c1d2e",
+      "key": "SETTLEMENT_PENDING",
+      "title": "Settlement Pending",
+      "description": "Payment success recorded; settlement confirmation pending from BBPS settlement cycle.",
+      "category": "SETTLEMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "banknote",
+        "tags": ["settlement"]
+      }
+    },
+    {
+      "uuid": "e1f2a3b4-c5d6-7e8f-9a0b-1c2d3e4f5a6b",
+      "key": "SETTLEMENT_CONFIRMED",
+      "title": "Settlement Confirmed",
+      "description": "Settlement confirmation received and recorded.",
+      "category": "SETTLEMENT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle-2",
+        "tags": ["settlement", "confirmed"]
+      }
+    },
+
+    {
+      "uuid": "f1e2d3c4-b5a6-7980-9b0c-1d2e3f4a5b6c",
+      "key": "RECONCILIATION_PENDING",
+      "title": "Reconciliation Pending",
+      "description": "Transaction is awaiting reconciliation with BBPS settlement files and internal ledger.",
+      "category": "RECONCILIATION",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "list-checks",
+        "tags": ["recon"]
+      }
+    },
+    {
+      "uuid": "a1b2c3d4-e5f6-7081-92a3-b4c5d6e7f8a9",
+      "key": "RECONCILIATION_MATCHED",
+      "title": "Reconciliation Matched",
+      "description": "Transaction matched successfully with BBPS settlement and internal ledger records.",
+      "category": "RECONCILIATION",
+      "isTerminal": true,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-square",
+        "tags": ["recon", "matched"]
+      }
+    },
+    {
+      "uuid": "c9d8e7f6-a5b4-3210-9f8e-7d6c5b4a3f2e",
+      "key": "RECONCILIATION_MISMATCHED",
+      "title": "Reconciliation Mismatched",
+      "description": "Transaction mismatch found between internal ledger and BBPS settlement file.",
+      "category": "RECONCILIATION",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "requiresCaseCreation": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "alert-triangle",
+        "tags": ["recon", "mismatch"]
+      }
+    },
+    {
+      "uuid": "d0c1b2a3-4e5f-6071-8293-a4b5c6d7e8f9",
+      "key": "RECONCILIATION_RESOLVED",
+      "title": "Reconciliation Resolved",
+      "description": "Mismatch resolved manually or automatically with proper approvals and audit logs.",
+      "category": "RECONCILIATION",
+      "isTerminal": true,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "requiresMakerChecker": true,
+        "allowedActors": ["OPERATIONS_ADMIN", "SUPERVISOR"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "badge-check",
+        "tags": ["recon", "resolved"]
+      }
+    },
+
+    {
+      "uuid": "1c2d3e4f-5a6b-7c8d-9e0f-a1b2c3d4e5f6",
+      "key": "REFUND_INITIATED",
+      "title": "Refund Initiated",
+      "description": "Refund process initiated for a successful payment.",
+      "category": "REFUND",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "requiresIdempotencyKey": true,
+        "requiresMakerChecker": true,
+        "allowedActors": ["OPERATIONS_ADMIN", "SUPERVISOR", "SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "rotate-ccw",
+        "tags": ["refund"]
+      }
+    },
+    {
+      "uuid": "2d3e4f5a-6b7c-8d9e-0f1a-b2c3d4e5f6a7",
+      "key": "REFUND_PENDING",
+      "title": "Refund Pending",
+      "description": "Refund request sent and awaiting confirmation.",
+      "category": "REFUND",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "hourglass",
+        "tags": ["refund", "pending"]
+      }
+    },
+    {
+      "uuid": "3e4f5a6b-7c8d-9e0f-a1b2-c3d4e5f6a7b8",
+      "key": "REFUND_SUCCESS",
+      "title": "Refund Success",
+      "description": "Refund confirmed successfully.",
+      "category": "REFUND",
+      "isTerminal": true,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["refund", "success"]
+      }
+    },
+    {
+      "uuid": "4f5a6b7c-8d9e-0f1a-b2c3-d4e5f6a7b8c9",
+      "key": "REFUND_FAILED",
+      "title": "Refund Failed",
+      "description": "Refund failed due to BBPS rejection or bank failure.",
+      "category": "REFUND",
+      "isTerminal": true,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-circle",
+        "tags": ["refund", "failed"]
+      }
+    },
+
+    {
+      "uuid": "5a6b7c8d-9e0f-a1b2-c3d4-e5f6a7b8c9d0",
+      "key": "REVERSAL_INITIATED",
+      "title": "Reversal Initiated",
+      "description": "Reversal initiated within allowed time window to reverse a transaction before final settlement.",
+      "category": "REVERSAL",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "requiresIdempotencyKey": true,
+        "requiresMakerChecker": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN", "SUPERVISOR"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "undo",
+        "tags": ["reversal"]
+      }
+    },
+    {
+      "uuid": "6b7c8d9e-0f1a-b2c3-d4e5-f6a7b8c9d0e1",
+      "key": "REVERSAL_PENDING",
+      "title": "Reversal Pending",
+      "description": "Reversal request pending confirmation.",
+      "category": "REVERSAL",
+      "isTerminal": false,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "hourglass",
+        "tags": ["reversal", "pending"]
+      }
+    },
+    {
+      "uuid": "7c8d9e0f-a1b2-c3d4-e5f6-a7b8c9d0e1f2",
+      "key": "REVERSAL_SUCCESS",
+      "title": "Reversal Success",
+      "description": "Reversal confirmed successfully.",
+      "category": "REVERSAL",
+      "isTerminal": true,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["reversal", "success"]
+      }
+    },
+    {
+      "uuid": "8d9e0f1a-b2c3-d4e5-f6a7-b8c9d0e1f2a3",
+      "key": "REVERSAL_FAILED",
+      "title": "Reversal Failed",
+      "description": "Reversal failed due to rejection or already settled transaction.",
+      "category": "REVERSAL",
+      "isTerminal": true,
+      "properties": {
+        "retryable": true,
+        "manualOverrideAllowed": true,
+        "requiresLedgerEntry": true,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-circle",
+        "tags": ["reversal", "failed"]
+      }
+    },
+
+    {
+      "uuid": "9e0f1a2b-3c4d-5e6f-7081-92a3b4c5d6e7",
+      "key": "COMPLAINT_RAISED",
+      "title": "Complaint Raised",
+      "description": "Complaint raised for a transaction by customer or operations team.",
+      "category": "COMPLAINT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "requiresCaseCreation": true,
+        "allowedActors": ["CUSTOMER", "AGENT", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "message-square-warning",
+        "tags": ["complaint", "case"]
+      }
+    },
+    {
+      "uuid": "0f1a2b3c-4d5e-6f70-8192-a3b4c5d6e7f8",
+      "key": "COMPLAINT_IN_PROGRESS",
+      "title": "Complaint In Progress",
+      "description": "Complaint is being investigated; evidence gathering and resolution is in progress.",
+      "category": "COMPLAINT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "allowedActors": ["OPERATIONS_ADMIN", "SUPERVISOR"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "loader",
+        "tags": ["complaint", "progress"]
+      }
+    },
+    {
+      "uuid": "1a2b3c4d-5e6f-7081-92a3-b4c5d6e7f809",
+      "key": "COMPLAINT_ESCALATED",
+      "title": "Complaint Escalated",
+      "description": "Complaint escalated to higher support or BBPS dispute process.",
+      "category": "COMPLAINT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "allowedActors": ["SUPERVISOR", "COMPLIANCE_OFFICER"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "arrow-up-right",
+        "tags": ["complaint", "escalation"]
+      }
+    },
+    {
+      "uuid": "2b3c4d5e-6f70-8192-a3b4-c5d6e7f8091a",
+      "key": "COMPLAINT_RESOLVED",
+      "title": "Complaint Resolved",
+      "description": "Complaint resolved with appropriate action taken (refund, reversal, clarification, or closure).",
+      "category": "COMPLAINT",
+      "isTerminal": false,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": true,
+        "requiresMakerChecker": true,
+        "allowedActors": ["OPERATIONS_ADMIN", "SUPERVISOR"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check",
+        "tags": ["complaint", "resolved"]
+      }
+    },
+    {
+      "uuid": "3c4d5e6f-7081-92a3-b4c5-d6e7f8091a2b",
+      "key": "COMPLAINT_CLOSED",
+      "title": "Complaint Closed",
+      "description": "Complaint case closed after resolution confirmation and customer acknowledgement (if required).",
+      "category": "COMPLAINT",
+      "isTerminal": true,
+      "properties": {
+        "retryable": false,
+        "manualOverrideAllowed": false,
+        "allowedActors": ["SYSTEM", "OPERATIONS_ADMIN"]
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "lock",
+        "tags": ["complaint", "closed"]
+      }
+    }
+  ],
+
+  "transitions": [
+    {
+      "uuid": "a0b1c2d3-e4f5-6789-0a1b-2c3d4e5f6a7b",
+      "fromStateKey": "TXN_CREATED",
+      "toStateKey": "BILL_FETCH_INITIATED",
+      "title": "Start Bill Fetch",
+      "description": "Customer begins bill fetch flow.",
+      "properties": {
+        "trigger": "API_CALL",
+        "triggerEvent": "BILL_FETCH_REQUEST",
+        "retryable": true,
+        "requiresValidation": true,
+        "requiresIdempotencyKey": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "arrow-right",
+        "tags": ["bill", "start"]
+      }
+    },
+    {
+      "uuid": "b1c2d3e4-f5a6-7890-1b2c-3d4e5f6a7b8c",
+      "fromStateKey": "BILL_FETCH_INITIATED",
+      "toStateKey": "BILL_FETCH_REQUEST_SENT",
+      "title": "Send Bill Fetch to BBPS",
+      "description": "System sends bill fetch request to BBPS.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "SEND_TO_BBPS",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "send",
+        "tags": ["bbps", "bill-fetch"]
+      }
+    },
+    {
+      "uuid": "c2d3e4f5-a6b7-8901-2c3d-4e5f6a7b8c9d",
+      "fromStateKey": "BILL_FETCH_REQUEST_SENT",
+      "toStateKey": "BILL_FETCH_SUCCESS",
+      "title": "Bill Fetch Response Success",
+      "description": "BBPS returned valid bill data.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "BBPS_BILL_FETCH_SUCCESS",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check",
+        "tags": ["bill-fetch", "success"]
+      }
+    },
+    {
+      "uuid": "d3e4f5a6-b7c8-9012-3d4e-5f6a7b8c9d0e",
+      "fromStateKey": "BILL_FETCH_REQUEST_SENT",
+      "toStateKey": "BILL_FETCH_FAILED",
+      "title": "Bill Fetch Response Failed",
+      "description": "BBPS returned failure or validation error.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "BBPS_BILL_FETCH_FAILED",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x",
+        "tags": ["bill-fetch", "failed"]
+      }
+    },
+    {
+      "uuid": "e4f5a6b7-c8d9-0123-4e5f-6a7b8c9d0e1f",
+      "fromStateKey": "BILL_FETCH_REQUEST_SENT",
+      "toStateKey": "BILL_FETCH_TIMEOUT",
+      "title": "Bill Fetch Timeout",
+      "description": "Bill fetch timed out waiting for BBPS response.",
+      "properties": {
+        "trigger": "TIMEOUT",
+        "triggerEvent": "BBPS_TIMEOUT",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "clock",
+        "tags": ["bill-fetch", "timeout"]
+      }
+    },
+    {
+      "uuid": "f5a6b7c8-d9e0-1234-5f6a-7b8c9d0e1f2a",
+      "fromStateKey": "BILL_FETCH_TIMEOUT",
+      "toStateKey": "BILL_FETCH_REQUEST_SENT",
+      "title": "Retry Bill Fetch",
+      "description": "Retry bill fetch request after timeout.",
+      "properties": {
+        "trigger": "RETRY",
+        "triggerEvent": "RETRY_BILL_FETCH",
+        "retryable": true,
+        "maxRetryCount": 3
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "refresh-cw",
+        "tags": ["retry", "bill-fetch"]
+      }
+    },
+
+    {
+      "uuid": "a6b7c8d9-e0f1-2345-6a7b-8c9d0e1f2a3b",
+      "fromStateKey": "BILL_FETCH_SUCCESS",
+      "toStateKey": "PAYMENT_INITIATED",
+      "title": "Initiate Payment",
+      "description": "Customer initiates payment after bill is fetched successfully.",
+      "properties": {
+        "trigger": "API_CALL",
+        "triggerEvent": "PAYMENT_REQUEST",
+        "retryable": true,
+        "requiresIdempotencyKey": true,
+        "requiresLedgerEntry": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "credit-card",
+        "tags": ["payment", "init"]
+      }
+    },
+    {
+      "uuid": "b7c8d9e0-f1a2-3456-7b8c-9d0e1f2a3b4c",
+      "fromStateKey": "PAYMENT_INITIATED",
+      "toStateKey": "PAYMENT_VALIDATED",
+      "title": "Validate Payment",
+      "description": "Validate payment request parameters, biller rules, fraud checks.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "VALIDATE_PAYMENT",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "shield-check",
+        "tags": ["validation"]
+      }
+    },
+    {
+      "uuid": "c8d9e0f1-a2b3-4567-8c9d-0e1f2a3b4c5d",
+      "fromStateKey": "PAYMENT_VALIDATED",
+      "toStateKey": "PAYMENT_REQUEST_SENT_TO_BBPS",
+      "title": "Send Payment to BBPS",
+      "description": "System sends payment request to BBPS gateway.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "SEND_PAYMENT_TO_BBPS",
+        "retryable": true,
+        "timeoutMs": 30000
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "send",
+        "tags": ["payment", "bbps"]
+      }
+    },
+    {
+      "uuid": "d9e0f1a2-b3c4-5678-9d0e-1f2a3b4c5d6e",
+      "fromStateKey": "PAYMENT_REQUEST_SENT_TO_BBPS",
+      "toStateKey": "PAYMENT_SUCCESS",
+      "title": "Payment Success Response",
+      "description": "BBPS confirmed payment success.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "BBPS_PAYMENT_SUCCESS",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["payment", "success"]
+      }
+    },
+    {
+      "uuid": "e0f1a2b3-c4d5-6789-0e1f-2a3b4c5d6e7f",
+      "fromStateKey": "PAYMENT_REQUEST_SENT_TO_BBPS",
+      "toStateKey": "PAYMENT_FAILED",
+      "title": "Payment Failure Response",
+      "description": "BBPS confirmed payment failure.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "BBPS_PAYMENT_FAILED",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-circle",
+        "tags": ["payment", "failed"]
+      }
+    },
+    {
+      "uuid": "f1a2b3c4-d5e6-7890-1f2a-3b4c5d6e7f8a",
+      "fromStateKey": "PAYMENT_REQUEST_SENT_TO_BBPS",
+      "toStateKey": "PAYMENT_TIMEOUT",
+      "title": "Payment Timeout",
+      "description": "No response from BBPS within timeout.",
+      "properties": {
+        "trigger": "TIMEOUT",
+        "triggerEvent": "BBPS_TIMEOUT",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "clock",
+        "tags": ["payment", "timeout"]
+      }
+    },
+    {
+      "uuid": "a2b3c4d5-e6f7-8901-2a3b-4c5d6e7f8a9b",
+      "fromStateKey": "PAYMENT_TIMEOUT",
+      "toStateKey": "PAYMENT_PENDING",
+      "title": "Mark Payment Pending",
+      "description": "After timeout, transaction is marked pending and must be resolved via status inquiry.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "MARK_PENDING",
+        "retryable": false,
+        "requiresStatusInquiry": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "hourglass",
+        "tags": ["pending"]
+      }
+    },
+    {
+      "uuid": "b3c4d5e6-f7a8-9012-3b4c-5d6e7f8a9b0c",
+      "fromStateKey": "PAYMENT_PENDING",
+      "toStateKey": "STATUS_INQUIRY_INITIATED",
+      "title": "Initiate Status Inquiry",
+      "description": "System triggers status inquiry job for pending transaction.",
+      "properties": {
+        "trigger": "SCHEDULER_JOB",
+        "triggerEvent": "AUTO_STATUS_INQUIRY",
+        "retryable": true,
+        "maxRetryCount": 10
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "search",
+        "tags": ["inquiry", "pending"]
+      }
+    },
+    {
+      "uuid": "c4d5e6f7-a8b9-0123-4c5d-6e7f8a9b0c1d",
+      "fromStateKey": "STATUS_INQUIRY_INITIATED",
+      "toStateKey": "STATUS_INQUIRY_SENT",
+      "title": "Send Inquiry to BBPS",
+      "description": "Inquiry request sent to BBPS.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "SEND_STATUS_INQUIRY",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "send",
+        "tags": ["inquiry", "bbps"]
+      }
+    },
+    {
+      "uuid": "d5e6f7a8-b9c0-1234-5d6e-7f8a9b0c1d2e",
+      "fromStateKey": "STATUS_INQUIRY_SENT",
+      "toStateKey": "STATUS_INQUIRY_SUCCESS",
+      "title": "Inquiry Response Received",
+      "description": "Inquiry response received successfully.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "BBPS_STATUS_RESPONSE",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check",
+        "tags": ["inquiry", "response"]
+      }
+    },
+    {
+      "uuid": "e6f7a8b9-c0d1-2345-6e7f-8a9b0c1d2e3f",
+      "fromStateKey": "STATUS_INQUIRY_SENT",
+      "toStateKey": "STATUS_INQUIRY_FAILED",
+      "title": "Inquiry Failed",
+      "description": "Inquiry failed; system may retry until SLA threshold.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "BBPS_STATUS_INQUIRY_FAILED",
+        "retryable": true,
+        "maxRetryCount": 10
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x",
+        "tags": ["inquiry", "failed"]
+      }
+    },
+
+    {
+      "uuid": "f7a8b9c0-d1e2-3456-7f8a-9b0c1d2e3f4a",
+      "fromStateKey": "STATUS_INQUIRY_SUCCESS",
+      "toStateKey": "PAYMENT_SUCCESS",
+      "title": "Resolve Pending as Success",
+      "description": "Status inquiry confirms payment success.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "MAP_INQUIRY_SUCCESS",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "badge-check",
+        "tags": ["pending", "resolved-success"]
+      }
+    },
+    {
+      "uuid": "a8b9c0d1-e2f3-4567-8a9b-0c1d2e3f4a5b",
+      "fromStateKey": "STATUS_INQUIRY_SUCCESS",
+      "toStateKey": "PAYMENT_FAILED",
+      "title": "Resolve Pending as Failed",
+      "description": "Status inquiry confirms payment failed.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "MAP_INQUIRY_FAILED",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-octagon",
+        "tags": ["pending", "resolved-failed"]
+      }
+    },
+    {
+      "uuid": "b9c0d1e2-f3a4-5678-9b0c-1d2e3f4a5b6c",
+      "fromStateKey": "PAYMENT_SUCCESS",
+      "toStateKey": "SETTLEMENT_PENDING",
+      "title": "Mark Settlement Pending",
+      "description": "After payment success, settlement pending is created.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "CREATE_SETTLEMENT_RECORD",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "banknote",
+        "tags": ["settlement"]
+      }
+    },
+    {
+      "uuid": "c0d1e2f3-a4b5-6789-0c1d-2e3f4a5b6c7d",
+      "fromStateKey": "SETTLEMENT_PENDING",
+      "toStateKey": "SETTLEMENT_CONFIRMED",
+      "title": "Confirm Settlement",
+      "description": "Settlement file confirms settlement completion.",
+      "properties": {
+        "trigger": "SCHEDULER_JOB",
+        "triggerEvent": "SETTLEMENT_FILE_INGEST",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["settlement", "confirmed"]
+      }
+    },
+    {
+      "uuid": "d1e2f3a4-b5c6-7890-1d2e-3f4a5b6c7d8e",
+      "fromStateKey": "SETTLEMENT_CONFIRMED",
+      "toStateKey": "RECONCILIATION_PENDING",
+      "title": "Begin Reconciliation",
+      "description": "Settlement confirmed; reconciliation is queued.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "START_RECON",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "list-checks",
+        "tags": ["recon"]
+      }
+    },
+    {
+      "uuid": "e2f3a4b5-c6d7-8901-2e3f-4a5b6c7d8e9f",
+      "fromStateKey": "RECONCILIATION_PENDING",
+      "toStateKey": "RECONCILIATION_MATCHED",
+      "title": "Reconciliation Match",
+      "description": "Transaction reconciled successfully.",
+      "properties": {
+        "trigger": "SCHEDULER_JOB",
+        "triggerEvent": "RECON_MATCH",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-square",
+        "tags": ["recon", "match"]
+      }
+    },
+    {
+      "uuid": "f3a4b5c6-d7e8-9012-3f4a-5b6c7d8e9f0a",
+      "fromStateKey": "RECONCILIATION_PENDING",
+      "toStateKey": "RECONCILIATION_MISMATCHED",
+      "title": "Reconciliation Mismatch",
+      "description": "Mismatch detected during reconciliation.",
+      "properties": {
+        "trigger": "SCHEDULER_JOB",
+        "triggerEvent": "RECON_MISMATCH",
+        "retryable": false,
+        "requiresCaseCreation": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "alert-triangle",
+        "tags": ["recon", "mismatch"]
+      }
+    },
+    {
+      "uuid": "a4b5c6d7-e8f9-0123-4a5b-6c7d8e9f0a1b",
+      "fromStateKey": "RECONCILIATION_MISMATCHED",
+      "toStateKey": "RECONCILIATION_RESOLVED",
+      "title": "Resolve Reconciliation Mismatch",
+      "description": "Mismatch resolved with maker-checker approval.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "MISMATCH_RESOLVED",
+        "retryable": false,
+        "requiresMakerChecker": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "badge-check",
+        "tags": ["recon", "resolved"]
+      }
+    },
+
+    {
+      "uuid": "b5c6d7e8-f9a0-1234-5b6c-7d8e9f0a1b2c",
+      "fromStateKey": "PAYMENT_SUCCESS",
+      "toStateKey": "REFUND_INITIATED",
+      "title": "Start Refund",
+      "description": "Refund initiated for a successful payment.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "REFUND_REQUEST",
+        "retryable": true,
+        "requiresIdempotencyKey": true,
+        "requiresMakerChecker": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "rotate-ccw",
+        "tags": ["refund"]
+      }
+    },
+    {
+      "uuid": "c6d7e8f9-a0b1-2345-6c7d-8e9f0a1b2c3d",
+      "fromStateKey": "REFUND_INITIATED",
+      "toStateKey": "REFUND_PENDING",
+      "title": "Refund Pending",
+      "description": "Refund request sent to BBPS/bank.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "SEND_REFUND",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "hourglass",
+        "tags": ["refund", "pending"]
+      }
+    },
+    {
+      "uuid": "d7e8f9a0-b1c2-3456-7d8e-9f0a1b2c3d4e",
+      "fromStateKey": "REFUND_PENDING",
+      "toStateKey": "REFUND_SUCCESS",
+      "title": "Refund Success",
+      "description": "Refund confirmed successfully.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "REFUND_CONFIRMED",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["refund", "success"]
+      }
+    },
+    {
+      "uuid": "e8f9a0b1-c2d3-4567-8e9f-0a1b2c3d4e5f",
+      "fromStateKey": "REFUND_PENDING",
+      "toStateKey": "REFUND_FAILED",
+      "title": "Refund Failed",
+      "description": "Refund rejected or failed.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "REFUND_FAILED",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-circle",
+        "tags": ["refund", "failed"]
+      }
+    },
+
+    {
+      "uuid": "f9a0b1c2-d3e4-5678-9f0a-1b2c3d4e5f6a",
+      "fromStateKey": "PAYMENT_SUCCESS",
+      "toStateKey": "REVERSAL_INITIATED",
+      "title": "Start Reversal",
+      "description": "Reversal initiated within allowed time window.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "REVERSAL_REQUEST",
+        "retryable": true,
+        "requiresIdempotencyKey": true,
+        "requiresMakerChecker": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "undo",
+        "tags": ["reversal"]
+      }
+    },
+    {
+      "uuid": "a0b1c2d3-e4f5-6789-0a1b-2c3d4e5f6a7c",
+      "fromStateKey": "REVERSAL_INITIATED",
+      "toStateKey": "REVERSAL_PENDING",
+      "title": "Reversal Pending",
+      "description": "Reversal request sent to BBPS.",
+      "properties": {
+        "trigger": "INTERNAL_PROCESS",
+        "triggerEvent": "SEND_REVERSAL",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "hourglass",
+        "tags": ["reversal", "pending"]
+      }
+    },
+    {
+      "uuid": "b1c2d3e4-f5a6-7890-1b2c-3d4e5f6a7b8d",
+      "fromStateKey": "REVERSAL_PENDING",
+      "toStateKey": "REVERSAL_SUCCESS",
+      "title": "Reversal Success",
+      "description": "Reversal confirmed successfully.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "REVERSAL_CONFIRMED",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check-circle",
+        "tags": ["reversal", "success"]
+      }
+    },
+    {
+      "uuid": "c2d3e4f5-a6b7-8901-2c3d-4e5f6a7b8c9e",
+      "fromStateKey": "REVERSAL_PENDING",
+      "toStateKey": "REVERSAL_FAILED",
+      "title": "Reversal Failed",
+      "description": "Reversal rejected or failed.",
+      "properties": {
+        "trigger": "EXTERNAL_RESPONSE",
+        "triggerEvent": "REVERSAL_FAILED",
+        "retryable": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "x-circle",
+        "tags": ["reversal", "failed"]
+      }
+    },
+
+    {
+      "uuid": "d3e4f5a6-b7c8-9012-3d4e-5f6a7b8c9d0f",
+      "fromStateKey": "PAYMENT_SUCCESS",
+      "toStateKey": "COMPLAINT_RAISED",
+      "title": "Raise Complaint",
+      "description": "Customer raises complaint for successful payment.",
+      "properties": {
+        "trigger": "API_CALL",
+        "triggerEvent": "COMPLAINT_RAISE",
+        "retryable": false,
+        "requiresCaseCreation": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "message-square-warning",
+        "tags": ["complaint"]
+      }
+    },
+    {
+      "uuid": "e4f5a6b7-c8d9-0123-4e5f-6a7b8c9d0e10",
+      "fromStateKey": "COMPLAINT_RAISED",
+      "toStateKey": "COMPLAINT_IN_PROGRESS",
+      "title": "Start Complaint Investigation",
+      "description": "Complaint investigation started.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "ASSIGN_CASE",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "loader",
+        "tags": ["complaint", "progress"]
+      }
+    },
+    {
+      "uuid": "f5a6b7c8-d9e0-1234-5f6a-7b8c9d0e1f20",
+      "fromStateKey": "COMPLAINT_IN_PROGRESS",
+      "toStateKey": "COMPLAINT_ESCALATED",
+      "title": "Escalate Complaint",
+      "description": "Complaint escalated to supervisor or BBPS dispute team.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "ESCALATE_CASE",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "arrow-up-right",
+        "tags": ["complaint", "escalated"]
+      }
+    },
+    {
+      "uuid": "a6b7c8d9-e0f1-2345-6a7b-8c9d0e1f2a30",
+      "fromStateKey": "COMPLAINT_IN_PROGRESS",
+      "toStateKey": "COMPLAINT_RESOLVED",
+      "title": "Resolve Complaint",
+      "description": "Complaint resolved internally.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "RESOLVE_CASE",
+        "retryable": false,
+        "requiresMakerChecker": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check",
+        "tags": ["complaint", "resolved"]
+      }
+    },
+    {
+      "uuid": "b7c8d9e0-f1a2-3456-7b8c-9d0e1f2a3b40",
+      "fromStateKey": "COMPLAINT_ESCALATED",
+      "toStateKey": "COMPLAINT_RESOLVED",
+      "title": "Resolve Escalated Complaint",
+      "description": "Escalated complaint resolved.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "RESOLVE_ESCALATED_CASE",
+        "retryable": false,
+        "requiresMakerChecker": true
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "check",
+        "tags": ["complaint", "resolved"]
+      }
+    },
+    {
+      "uuid": "c8d9e0f1-a2b3-4567-8c9d-0e1f2a3b4c50",
+      "fromStateKey": "COMPLAINT_RESOLVED",
+      "toStateKey": "COMPLAINT_CLOSED",
+      "title": "Close Complaint",
+      "description": "Complaint closed after resolution confirmation.",
+      "properties": {
+        "trigger": "MANUAL_ACTION",
+        "triggerEvent": "CLOSE_CASE",
+        "retryable": false
+      },
+      "metadata": {
+        "createdAt": "2026-02-07T00:00:00Z",
+        "updatedAt": "2026-02-07T00:00:00Z",
+        "icon": "lock",
+        "tags": ["complaint", "closed"]
+      }
+    }
+  ]
+}

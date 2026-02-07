@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>State Machine Explorer (D3)</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --panel:#0f1624;
+      --panel2:#0c1320;
+      --stroke:#22314a;
+      --text:#e7eefc;
+      --muted:#9fb2d4;
+      --accent:#79a8ff;
+      --accent2:#6ee7ff;
+      --danger:#ff6b6b;
+      --ok:#6bffb3;
+      --shadow: 0 18px 50px rgba(0,0,0,.55);
+      --radius: 16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(121,168,255,.14), transparent 60%),
+                  radial-gradient(900px 600px at 80% 20%, rgba(110,231,255,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      overflow:hidden;
+    }
+
+    header{
+      height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: rgba(10,14,22,.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .logo{
+      width:38px;height:38px;
+      border-radius:12px;
+      background: linear-gradient(135deg, rgba(121,168,255,.95), rgba(110,231,255,.95));
+      box-shadow: 0 14px 40px rgba(121,168,255,.22);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#07101e;
+      font-weight:800;
+      letter-spacing:.5px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      line-height:1.1;
+    }
+
+    .title strong{font-size:14px}
+    .title span{font-size:12px;color:var(--muted)}
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    button{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(15,22,36,.75);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size: 12px;
+      transition: .15s ease;
+    }
+    button:hover{
+      border-color: rgba(121,168,255,.45);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      transform: translateY(-1px);
+    }
+
+    button.primary{
+      background: linear-gradient(135deg, rgba(121,168,255,.95), rgba(110,231,255,.95));
+      color:#061020;
+      border: none;
+      font-weight: 700;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      height: calc(100vh - 64px);
+    }
+
+    #graph{
+      position:relative;
+      overflow:hidden;
+    }
+
+    aside{
+      border-left: 1px solid rgba(255,255,255,.06);
+      background: rgba(12,18,30,.75);
+      backdrop-filter: blur(10px);
+      padding: 14px;
+      overflow:auto;
+    }
+
+    .panel{
+      background: rgba(15,22,36,.65);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+
+    .panel h3{
+      margin:0 0 8px 0;
+      font-size: 13px;
+      letter-spacing:.2px;
+    }
+
+    .muted{color:var(--muted); font-size: 12px; line-height:1.45}
+    .mono{
+      font-family: var(--mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      color: rgba(231,238,252,.92);
+      line-height:1.4;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(11,15,23,.55);
+      color: var(--muted);
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+
+    .crumbs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+
+    .crumb{
+      cursor:pointer;
+      user-select:none;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(11,15,23,.55);
+      font-size: 11px;
+      color: var(--muted);
+      transition: .15s ease;
+    }
+    .crumb:hover{
+      color: var(--text);
+      border-color: rgba(121,168,255,.35);
+    }
+
+    .search{
+      width:100%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(11,15,23,.6);
+      color: var(--text);
+      outline:none;
+      font-size: 12px;
+    }
+
+    .hint{
+      font-size: 11px;
+      color: rgba(159,178,212,.75);
+      margin-top:8px;
+      line-height:1.5;
+    }
+
+    /* Graph */
+    svg{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
+    .link{
+      stroke: rgba(159,178,212,.35);
+      stroke-width: 1.5px;
+      fill:none;
+    }
+
+    .link-label{
+      font-size: 10px;
+      fill: rgba(159,178,212,.85);
+      user-select:none;
+      pointer-events:none;
+    }
+
+    .node rect{
+      fill: rgba(15,22,36,.75);
+      stroke: rgba(255,255,255,.10);
+      stroke-width: 1.2px;
+      rx: 14;
+      ry: 14;
+    }
+
+    .node:hover rect{
+      stroke: rgba(121,168,255,.6);
+      filter: drop-shadow(0px 16px 25px rgba(0,0,0,.35));
+    }
+
+    .node-title{
+      font-size: 12px;
+      fill: rgba(231,238,252,.96);
+      font-weight: 700;
+      pointer-events:none;
+    }
+
+    .node-sub{
+      font-size: 10px;
+      fill: rgba(159,178,212,.85);
+      pointer-events:none;
+    }
+
+    .pill{
+      font-size: 9px;
+      fill: rgba(159,178,212,.85);
+      pointer-events:none;
+    }
+
+    .info-btn{
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .info-btn circle{
+      fill: rgba(11,15,23,.8);
+      stroke: rgba(255,255,255,.14);
+      stroke-width: 1;
+    }
+
+    .info-btn text{
+      font-size: 10px;
+      font-weight: 900;
+      fill: rgba(231,238,252,.9);
+    }
+
+    .drill-btn{
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .drill-btn rect{
+      fill: rgba(11,15,23,.7);
+      stroke: rgba(255,255,255,.12);
+      stroke-width: 1;
+      rx: 10;
+      ry: 10;
+    }
+
+    .drill-btn text{
+      font-size: 9px;
+      fill: rgba(231,238,252,.9);
+      font-weight: 700;
+    }
+
+    .node-selected rect{
+      stroke: rgba(110,231,255,.8);
+      stroke-width: 2px;
+    }
+
+    .tooltip{
+      position:absolute;
+      pointer-events:none;
+      opacity:0;
+      transform: translate(-50%, -110%);
+      background: rgba(15,22,36,.92);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 10px 12px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      width: 340px;
+      max-width: 92vw;
+      z-index: 10;
+      transition: opacity .12s ease;
+    }
+
+    .tooltip h4{
+      margin:0 0 4px 0;
+      font-size: 12px;
+    }
+
+    .tooltip .small{
+      font-size: 11px;
+      color: var(--muted);
+      line-height:1.45;
+      margin-bottom: 8px;
+    }
+
+    .tooltip pre{
+      margin:0;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: rgba(231,238,252,.9);
+      background: rgba(11,15,23,.6);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: 10px;
+      overflow:auto;
+      max-height: 220px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">SM</div>
+      <div class="title">
+        <strong>State Machine Explorer</strong>
+        <span>Interactive D3 visualization · Recursive drill-down · Enterprise-ready model</span>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button id="btnReset">Reset View</button>
+      <button id="btnFit">Fit</button>
+      <button id="btnExport" class="primary">Export JSON</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div id="graph">
+      <div id="tooltip" class="tooltip"></div>
+      <svg id="svg"></svg>
+    </div>
+
+    <aside>
+      <div class="panel">
+        <h3>Search</h3>
+        <input id="search" class="search" placeholder="Search states/transitions..." />
+        <div class="hint">
+          Tip: click node <b>ⓘ</b> to inspect. Click <b>Drill</b> to enter nested machines.
+          Drag nodes, zoom/pan, and hover edges for transition details.
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Navigation</h3>
+        <div class="row">
+          <span class="badge" id="levelBadge">Level: 0</span>
+          <span class="badge" id="countsBadge">States: 0 · Transitions: 0</span>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="muted" style="margin-bottom:6px;">Breadcrumbs</div>
+          <div class="crumbs" id="crumbs"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Selection</h3>
+        <div class="muted" id="selectionHint">No selection. Click ⓘ on a state/transition.</div>
+        <pre class="mono" id="selectionJson" style="display:none;"></pre>
+      </div>
+
+      <div class="panel">
+        <h3>Enterprise-grade capabilities (suggested)</h3>
+        <div class="muted">
+          • State validation engine (forbidden transitions, SLA checks)<br/>
+          • Diff viewer (compare two machines)<br/>
+          • Versioning + migrations<br/>
+          • Layout presets (force/graphviz/radial)<br/>
+          • Role-based edit permissions + maker-checker<br/>
+          • Multi-user collaboration & comments<br/>
+          • Automated test-case generator per transition<br/>
+          • Export formats: JSON, SVG, PNG, PDF, Mermaid<br/>
+          • Execution simulator (token-based state traversal)<br/>
+          • Event playback & audit timeline viewer<br/>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+/**
+ * Enterprise-grade State Machine Model + Explorer
+ *
+ * This class is intentionally designed to be extendable:
+ * - supports nested state machines (recursive)
+ * - supports drill-down with breadcrumb navigation
+ * - provides helper APIs for search, validation, export, diff-ready structure
+ */
+class StateMachineGraph {
+  constructor(json = null) {
+    this.root = json ? this._normalizeGraph(json) : this._createEmptyGraph();
+    this.stack = [{ graph: this.root, stateKey: null, level: 0 }];
+  }
+
+  // -------------------------
+  // Core Builders
+  // -------------------------
+  _createEmptyGraph() {
+    const now = new Date().toISOString();
+    return {
+      schemaVersion: "1.0.0",
+      graph: {
+        uuid: crypto.randomUUID(),
+        title: "Untitled State Machine",
+        description: "Empty state machine graph.",
+        type: "STATE_MACHINE_GRAPH",
+        metadata: {
+          createdAt: now,
+          updatedAt: now,
+          createdBy: "UNKNOWN",
+          updatedBy: "UNKNOWN",
+          icon: "git-branch",
+          tags: [],
+          status: "DRAFT"
+        }
+      },
+      globalProperties: {},
+      states: [],
+      transitions: []
+    };
+  }
+
+  _normalizeGraph(json) {
+    // minimal normalization / safety
+    const cloned = structuredClone(json);
+    if (!cloned.graph) cloned.graph = {};
+    if (!cloned.graph.uuid) cloned.graph.uuid = crypto.randomUUID();
+    if (!cloned.states) cloned.states = [];
+    if (!cloned.transitions) cloned.transitions = [];
+    if (!cloned.graph.metadata) cloned.graph.metadata = {};
+    if (!cloned.graph.metadata.createdAt) cloned.graph.metadata.createdAt = new Date().toISOString();
+    if (!cloned.graph.metadata.updatedAt) cloned.graph.metadata.updatedAt = new Date().toISOString();
+    return cloned;
+  }
+
+  // -------------------------
+  // Navigation / Drill Down
+  // -------------------------
+  getCurrentGraph() {
+    return this.stack[this.stack.length - 1].graph;
+  }
+
+  getCurrentLevel() {
+    return this.stack[this.stack.length - 1].level;
+  }
+
+  getBreadcrumbs() {
+    return this.stack.map((x, idx) => {
+      const g = x.graph;
+      return {
+        index: idx,
+        level: x.level,
+        title: g.graph?.title || "Untitled",
+        uuid: g.graph?.uuid || null,
+        stateKey: x.stateKey
+      };
+    });
+  }
+
+  canGoBack() {
+    return this.stack.length > 1;
+  }
+
+  goBackTo(index) {
+    if (index < 0 || index >= this.stack.length) return;
+    this.stack = this.stack.slice(0, index + 1);
+  }
+
+  drillIntoState(stateKey) {
+    const g = this.getCurrentGraph();
+    const state = g.states.find(s => s.key === stateKey);
+    if (!state) throw new Error("State not found: " + stateKey);
+
+    // Nested machine support: state.subMachine
+    if (!state.subMachine) {
+      // create an empty sub-machine by default if missing
+      state.subMachine = this._createEmptyGraph();
+      state.subMachine.graph.title = `SubMachine: ${state.title || state.key}`;
+      state.subMachine.graph.description = `Nested state machine for state ${state.key}.`;
+      state.subMachine.graph.metadata.icon = "layers";
+    }
+
+    this.stack.push({
+      graph: state.subMachine,
+      stateKey: stateKey,
+      level: this.getCurrentLevel() + 1
+    });
+  }
+
+  // -------------------------
+  // Enterprise Helpers
+  // -------------------------
+  exportJSON(pretty = true) {
+    return pretty ? JSON.stringify(this.root, null, 2) : JSON.stringify(this.root);
+  }
+
+  updateTimestamp() {
+    const g = this.getCurrentGraph();
+    if (g.graph && g.graph.metadata) {
+      g.graph.metadata.updatedAt = new Date().toISOString();
+    }
+  }
+
+  /**
+   * Validate graph consistency:
+   * - transition references exist
+   * - no orphan transitions
+   * - UUID presence
+   */
+  validateGraph(graph = this.getCurrentGraph()) {
+    const errors = [];
+    const stateKeys = new Set(graph.states.map(s => s.key));
+
+    for (const s of graph.states) {
+      if (!s.uuid) errors.push({ type: "STATE_UUID_MISSING", stateKey: s.key });
+      if (!s.title) errors.push({ type: "STATE_TITLE_MISSING", stateKey: s.key });
+    }
+
+    for (const t of graph.transitions) {
+      if (!t.uuid) errors.push({ type: "TRANSITION_UUID_MISSING", transition: t });
+      if (!stateKeys.has(t.fromStateKey)) {
+        errors.push({ type: "TRANSITION_FROM_INVALID", transitionUUID: t.uuid, from: t.fromStateKey });
+      }
+      if (!stateKeys.has(t.toStateKey)) {
+        errors.push({ type: "TRANSITION_TO_INVALID", transitionUUID: t.uuid, to: t.toStateKey });
+      }
+    }
+
+    return { ok: errors.length === 0, errors };
+  }
+
+  /**
+   * Full recursive validation for nested machines.
+   */
+  validateRecursive(graph = this.root, path = []) {
+    const result = [];
+    const local = this.validateGraph(graph);
+    result.push({ path, ...local });
+
+    for (const s of graph.states) {
+      if (s.subMachine) {
+        result.push(...this.validateRecursive(s.subMachine, [...path, s.key]));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Search states and transitions by keyword.
+   */
+  search(query, graph = this.getCurrentGraph()) {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return { states: [], transitions: [] };
+
+    const states = graph.states.filter(s =>
+      (s.key || "").toLowerCase().includes(q) ||
+      (s.title || "").toLowerCase().includes(q) ||
+      (s.description || "").toLowerCase().includes(q)
+    );
+
+    const transitions = graph.transitions.filter(t =>
+      (t.title || "").toLowerCase().includes(q) ||
+      (t.description || "").toLowerCase().includes(q) ||
+      (t.fromStateKey || "").toLowerCase().includes(q) ||
+      (t.toStateKey || "").toLowerCase().includes(q)
+    );
+
+    return { states, transitions };
+  }
+}
+
+/**
+ * D3 Renderer
+ * Minimal but modern: force-directed with zoom/pan, labels, edge arrows,
+ * info icons, and drill-down buttons for nested machines.
+ */
+class D3StateMachineRenderer {
+  constructor(svgEl, tooltipEl, selectionHandler) {
+    this.svg = d3.select(svgEl);
+    this.tooltipEl = tooltipEl;
+    this.onSelect = selectionHandler;
+
+    this.width = svgEl.clientWidth;
+    this.height = svgEl.clientHeight;
+
+    this.zoom = d3.zoom()
+      .scaleExtent([0.25, 2.5])
+      .on("zoom", (event) => {
+        this.g.attr("transform", event.transform);
+      });
+
+    this.svg.call(this.zoom);
+
+    this.g = this.svg.append("g");
+
+    this.defs = this.svg.append("defs");
+    this._setupMarkers();
+
+    this.simulation = null;
+    this.nodeSel = null;
+    this.linkSel = null;
+    this.labelSel = null;
+    this.linkLabelSel = null;
+
+    window.addEventListener("resize", () => this._onResize());
+  }
+
+  _setupMarkers() {
+    this.defs.append("marker")
+      .attr("id", "arrow")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 18)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "rgba(159,178,212,.55)");
+  }
+
+  _onResize() {
+    const node = this.svg.node();
+    this.width = node.clientWidth;
+    this.height = node.clientHeight;
+    if (this.simulation) {
+      this.simulation.force("center", d3.forceCenter(this.width / 2, this.height / 2));
+      this.simulation.alpha(0.6).restart();
+    }
+  }
+
+  resetView() {
+    this.svg.transition().duration(250).call(this.zoom.transform, d3.zoomIdentity);
+  }
+
+  fitView(padding = 40) {
+    const bounds = this.g.node().getBBox();
+    const fullWidth = this.width;
+    const fullHeight = this.height;
+
+    if (!bounds.width || !bounds.height) return;
+
+    const scale = Math.min(
+      2.0,
+      0.9 / Math.max(bounds.width / (fullWidth - padding), bounds.height / (fullHeight - padding))
+    );
+
+    const tx = (fullWidth - scale * (bounds.x + bounds.width / 2)) / 2;
+    const ty = (fullHeight - scale * (bounds.y + bounds.height / 2)) / 2;
+
+    this.svg.transition()
+      .duration(280)
+      .call(this.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+  }
+
+  render(graph, options = {}) {
+    const states = graph.states || [];
+    const transitions = graph.transitions || [];
+
+    // build nodes/links for D3
+    const nodes = states.map(s => ({
+      ...s,
+      id: s.key,
+      kind: "STATE"
+    }));
+
+    const links = transitions.map(t => ({
+      ...t,
+      source: t.fromStateKey,
+      target: t.toStateKey,
+      kind: "TRANSITION"
+    }));
+
+    // Clear previous
+    this.g.selectAll("*").remove();
+
+    // Draw links
+    this.linkSel = this.g.append("g")
+      .attr("class", "links")
+      .selectAll("path")
+      .data(links, d => d.uuid)
+      .join("path")
+      .attr("class", "link")
+      .attr("marker-end", "url(#arrow)")
+      .on("mousemove", (event, d) => this._showTooltip(event, d, "Transition"))
+      .on("mouseleave", () => this._hideTooltip());
+
+    // Link labels
+    this.linkLabelSel = this.g.append("g")
+      .selectAll("text")
+      .data(links, d => d.uuid)
+      .join("text")
+      .attr("class", "link-label")
+      .text(d => d.title || "");
+
+    // Draw nodes
+    this.nodeSel = this.g.append("g")
+      .attr("class", "nodes")
+      .selectAll("g")
+      .data(nodes, d => d.uuid)
+      .join("g")
+      .attr("class", "node")
+      .call(
+        d3.drag()
+          .on("start", (event, d) => this._dragStarted(event, d))
+          .on("drag", (event, d) => this._dragged(event, d))
+          .on("end", (event, d) => this._dragEnded(event, d))
+      );
+
+    // Node box
+    this.nodeSel.append("rect")
+      .attr("width", 220)
+      .attr("height", 72);
+
+    // Node title
+    this.nodeSel.append("text")
+      .attr("class", "node-title")
+      .attr("x", 12)
+      .attr("y", 22)
+      .text(d => d.title || d.key);
+
+    // Node subtitle
+    this.nodeSel.append("text")
+      .attr("class", "node-sub")
+      .attr("x", 12)
+      .attr("y", 40)
+      .text(d => d.key);
+
+    // Node pills: initial / terminal / category
+    this.nodeSel.append("text")
+      .attr("class", "pill")
+      .attr("x", 12)
+      .attr("y", 58)
+      .text(d => {
+        const parts = [];
+        if (d.isInitial) parts.push("INITIAL");
+        if (d.isTerminal) parts.push("TERMINAL");
+        if (d.category) parts.push(d.category);
+        return parts.join(" · ");
+      });
+
+    // Info icon
+    const info = this.nodeSel.append("g")
+      .attr("class", "info-btn")
+      .attr("transform", "translate(194, 14)")
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        this._selectNode(d);
+        this._showTooltip(event, d, "State");
+      });
+
+    info.append("circle")
+      .attr("r", 10);
+
+    info.append("text")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0.35em")
+      .text("i");
+
+    // Drill-down button if nested exists or is allowed
+    const drill = this.nodeSel.append("g")
+      .attr("class", "drill-btn")
+      .attr("transform", "translate(160, 46)")
+      .style("display", d => (d.subMachine ? "block" : "block")) // always show, since drill can create empty
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        if (options.onDrill) options.onDrill(d.key);
+      });
+
+    drill.append("rect")
+      .attr("width", 54)
+      .attr("height", 18);
+
+    drill.append("text")
+      .attr("x", 27)
+      .attr("y", 12)
+      .attr("text-anchor", "middle")
+      .text("Drill");
+
+    // Node click selects
+    this.nodeSel.on("click", (event, d) => {
+      this._selectNode(d);
+      this._hideTooltip();
+    });
+
+    // Force simulation
+    this.simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(210).strength(0.7))
+      .force("charge", d3.forceManyBody().strength(-720))
+      .force("center", d3.forceCenter(this.width / 2, this.height / 2))
+      .force("collide", d3.forceCollide(90));
+
+    this.simulation.on("tick", () => {
+      this.linkSel.attr("d", d => {
+        const sx = d.source.x + 110;
+        const sy = d.source.y + 36;
+        const tx = d.target.x + 110;
+        const ty = d.target.y + 36;
+
+        const dx = tx - sx;
+        const dy = ty - sy;
+        const dr = Math.sqrt(dx * dx + dy * dy) * 0.55;
+
+        // Curved link for clarity
+        return `M${sx},${sy} A${dr},${dr} 0 0,1 ${tx},${ty}`;
+      });
+
+      this.nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+
+      this.linkLabelSel
+        .attr("x", d => (d.source.x + d.target.x) / 2 + 110)
+        .attr("y", d => (d.source.y + d.target.y) / 2 + 32);
+    });
+
+    setTimeout(() => this.fitView(), 120);
+  }
+
+  _selectNode(d) {
+    this.nodeSel.classed("node-selected", x => x.uuid === d.uuid);
+    if (this.onSelect) this.onSelect({ kind: "STATE", data: d });
+  }
+
+  _showTooltip(event, data, kindLabel) {
+    const tip = this.tooltipEl;
+    tip.style.opacity = 1;
+
+    const title = data.title || data.key || "Untitled";
+    const desc = data.description || "(no description)";
+
+    const payload = {
+      uuid: data.uuid,
+      key: data.key,
+      title: data.title,
+      description: data.description,
+      properties: data.properties || {},
+      metadata: data.metadata || {},
+      category: data.category,
+      isInitial: data.isInitial,
+      isTerminal: data.isTerminal
+    };
+
+    tip.innerHTML = `
+      <h4>${kindLabel}: ${this._escapeHtml(title)}</h4>
+      <div class="small">${this._escapeHtml(desc)}</div>
+      <pre>${this._escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+    `;
+
+    const rect = this.svg.node().getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    tip.style.left = `${x}px`;
+    tip.style.top = `${y}px`;
+  }
+
+  _hideTooltip() {
+    this.tooltipEl.style.opacity = 0;
+  }
+
+  _escapeHtml(str) {
+    return (str ?? "")
+      .toString()
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
+  }
+
+  _dragStarted(event, d) {
+    if (!event.active) this.simulation.alphaTarget(0.35).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  _dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+
+  _dragEnded(event, d) {
+    if (!event.active) this.simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
+}
+
+/**
+ * Demo Data Loader:
+ * Paste your BBPS JSON here.
+ * This example uses a compact version for demo.
+ *
+ * Replace this constant with your full JSON (the one you generated earlier).
+ */
+const BBPS_STATE_MACHINE_JSON = {
+  "schemaVersion": "1.0.0",
+  "graph": {
+    "uuid": "8b7a3c1e-2d52-4f66-8c5b-0b7c8c6f4d31",
+    "title": "BBPS COU/BOU Transaction State Machine Graph",
+    "description": "Comprehensive BBPS transaction lifecycle state machine.",
+    "type": "STATE_MACHINE_GRAPH",
+    "metadata": {
+      "createdAt": "2026-02-07T00:00:00Z",
+      "updatedAt": "2026-02-07T00:00:00Z",
+      "icon": "git-branch"
+    }
+  },
+  "states": [
+    {
+      "uuid": "1b9b1e65-77b1-4e4a-88f7-9d3d1baf2a55",
+      "key": "TXN_CREATED",
+      "title": "Transaction Created",
+      "description": "Initial state.",
+      "category": "CORE",
+      "isInitial": true,
+      "isTerminal": false,
+      "properties": { "retryable": false },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "circle-plus" }
+    },
+    {
+      "uuid": "c0d3d11d-64d6-4e2b-8a70-3c0b7b3f9b1f",
+      "key": "BILL_FETCH_INITIATED",
+      "title": "Bill Fetch Initiated",
+      "description": "Bill fetch started.",
+      "category": "BILL_FETCH",
+      "properties": { "retryable": true },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "file-search" }
+    },
+    {
+      "uuid": "a9a8db0f-56d3-4b1f-98e1-6c6e2f6c1f44",
+      "key": "BILL_FETCH_SUCCESS",
+      "title": "Bill Fetch Success",
+      "description": "Bill fetch succeeded.",
+      "category": "BILL_FETCH",
+      "properties": { "retryable": false },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "check-circle" }
+    },
+    {
+      "uuid": "c8cdd2b1-49d6-4e6b-8b54-5e8f8c2f3c6a",
+      "key": "PAYMENT_INITIATED",
+      "title": "Payment Initiated",
+      "description": "Payment started.",
+      "category": "PAYMENT",
+      "properties": { "requiresIdempotencyKey": true },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "credit-card" }
+    },
+    {
+      "uuid": "f5a7e9b0-3d4e-4c1f-8b6a-9d2c3f7b8e1a",
+      "key": "PAYMENT_SUCCESS",
+      "title": "Payment Success",
+      "description": "Payment succeeded.",
+      "category": "PAYMENT",
+      "properties": { "requiresLedgerEntry": true },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "badge-check" }
+    },
+    {
+      "uuid": "9c3b2a1d-6f4e-4c3a-9b2f-8d1c7a2e5b3f",
+      "key": "PAYMENT_FAILED",
+      "title": "Payment Failed",
+      "description": "Payment failed.",
+      "category": "PAYMENT",
+      "isTerminal": true,
+      "properties": { "retryable": true },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "x-octagon" }
+    }
+  ],
+  "transitions": [
+    {
+      "uuid": "a0b1c2d3-e4f5-6789-0a1b-2c3d4e5f6a7b",
+      "fromStateKey": "TXN_CREATED",
+      "toStateKey": "BILL_FETCH_INITIATED",
+      "title": "Start Bill Fetch",
+      "description": "Begin bill fetch flow.",
+      "properties": { "trigger": "API_CALL" },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "arrow-right" }
+    },
+    {
+      "uuid": "a6b7c8d9-e0f1-2345-6a7b-8c9d0e1f2a3b",
+      "fromStateKey": "BILL_FETCH_SUCCESS",
+      "toStateKey": "PAYMENT_INITIATED",
+      "title": "Initiate Payment",
+      "description": "Pay after bill fetch success.",
+      "properties": { "trigger": "API_CALL" },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "credit-card" }
+    },
+    {
+      "uuid": "d9e0f1a2-b3c4-5678-9d0e-1f2a3b4c5d6e",
+      "fromStateKey": "PAYMENT_INITIATED",
+      "toStateKey": "PAYMENT_SUCCESS",
+      "title": "Payment Success",
+      "description": "BBPS confirms success.",
+      "properties": { "trigger": "EXTERNAL_RESPONSE" },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "check-circle" }
+    },
+    {
+      "uuid": "e0f1a2b3-c4d5-6789-0e1f-2a3b4c5d6e7f",
+      "fromStateKey": "PAYMENT_INITIATED",
+      "toStateKey": "PAYMENT_FAILED",
+      "title": "Payment Failed",
+      "description": "BBPS confirms failure.",
+      "properties": { "trigger": "EXTERNAL_RESPONSE" },
+      "metadata": { "createdAt": "2026-02-07T00:00:00Z", "updatedAt": "2026-02-07T00:00:00Z", "icon": "x-circle" }
+    }
+  ]
+};
+
+// ---------------------------
+// App Boot
+// ---------------------------
+const model = new StateMachineGraph(BBPS_STATE_MACHINE_JSON);
+
+const tooltip = document.getElementById("tooltip");
+const selectionJson = document.getElementById("selectionJson");
+const selectionHint = document.getElementById("selectionHint");
+const levelBadge = document.getElementById("levelBadge");
+const countsBadge = document.getElementById("countsBadge");
+const crumbsEl = document.getElementById("crumbs");
+const searchEl = document.getElementById("search");
+
+const renderer = new D3StateMachineRenderer(
+  document.getElementById("svg"),
+  tooltip,
+  (payload) => {
+    selectionHint.style.display = "none";
+    selectionJson.style.display = "block";
+    selectionJson.textContent = JSON.stringify(payload, null, 2);
+  }
+);
+
+function updateSidebar() {
+  const g = model.getCurrentGraph();
+  levelBadge.textContent = `Level: ${model.getCurrentLevel()}`;
+  countsBadge.textContent = `States: ${(g.states||[]).length} · Transitions: ${(g.transitions||[]).length}`;
+
+  crumbsEl.innerHTML = "";
+  for (const c of model.getBreadcrumbs()) {
+    const el = document.createElement("div");
+    el.className = "crumb";
+    el.textContent = `${c.level}: ${c.title}`;
+    el.onclick = () => {
+      model.goBackTo(c.index);
+      renderCurrent();
+    };
+    crumbsEl.appendChild(el);
+  }
+}
+
+function renderCurrent() {
+  updateSidebar();
+  const g = model.getCurrentGraph();
+  renderer.render(g, {
+    onDrill: (stateKey) => {
+      model.drillIntoState(stateKey);
+      renderCurrent();
+    }
+  });
+}
+
+renderCurrent();
+
+// Toolbar actions
+document.getElementById("btnReset").onclick = () => renderer.resetView();
+document.getElementById("btnFit").onclick = () => renderer.fitView();
+document.getElementById("btnExport").onclick = () => {
+  const blob = new Blob([model.exportJSON(true)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "state-machine.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+// Search highlighting (simple)
+searchEl.addEventListener("input", () => {
+  const q = searchEl.value.trim();
+  const g = model.getCurrentGraph();
+  const res = model.search(q, g);
+
+  // highlight matching nodes
+  const matchingKeys = new Set(res.states.map(s => s.key));
+  renderer.nodeSel.classed("node-selected", d => matchingKeys.has(d.key));
+
+  // show selection JSON if exact match
+  if (res.states.length === 1 && res.states[0].key.toLowerCase() === q.toLowerCase()) {
+    selectionHint.style.display = "none";
+    selectionJson.style.display = "block";
+    selectionJson.textContent = JSON.stringify(res.states[0], null, 2);
+  }
+});
+</script>
+</body>
+</html>
