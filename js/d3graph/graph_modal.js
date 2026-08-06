@@ -36,7 +36,7 @@ class GraphModal extends BaseModal {
         }
 
         if (this.body) {
-            this.body.innerHTML = data.desc || "No description available...";
+            GraphUtils.renderDescription(this.body, data.desc, "No description available...");
         }
 
         if (this.badge) {

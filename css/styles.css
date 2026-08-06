@@ -211,6 +211,48 @@ h1 {
     color: #16a34a;
 }
 
+/* Description Rendering */
+.description-content h1,
+.description-content h2,
+.description-content h3,
+.description-content h4,
+.description-content h5,
+.description-content h6 {
+    margin: 0 0 8px;
+    color: #0f172a;
+}
+
+.description-content p {
+    margin: 0 0 8px;
+}
+
+.description-content ul,
+.description-content ol {
+    margin: 0 0 10px 18px;
+    padding-left: 18px;
+}
+
+.description-content pre {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 10px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.description-content code {
+    background: #f1f5f9;
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.description-content .mermaid-diagram {
+    margin: 12px 0;
+}
+
 /* D3 Elements */
 .link {
     fill: none;

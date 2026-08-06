@@ -100,8 +100,8 @@ class PropertyEditor extends BaseModal {
         this._addFormField(labelGroupRow, 'Label', 'text', this.currentData.label, 'node-label');
         this._addGroupField(labelGroupRow);
 
-        // Description (textarea, accepts HTML)
-        this._addTextareaField(form, 'Description (HTML)', this.currentData.desc || '', 'node-desc');
+        // Description (textarea, accepts Markdown or HTML)
+        this._addTextareaField(form, 'Description (Markdown/HTML)', this.currentData.desc || '', 'node-desc');
 
         // Note about size
         const note = document.createElement('p');
@@ -131,8 +131,8 @@ class PropertyEditor extends BaseModal {
         // Label
         this._addFormField(form, 'Label', 'text', this.currentData.label || '', 'link-label');
 
-        // Description (textarea, accepts HTML)
-        this._addTextareaField(form, 'Description (HTML)', this.currentData.desc || '', 'link-desc');
+        // Description (textarea, accepts Markdown or HTML)
+        this._addTextareaField(form, 'Description (Markdown/HTML)', this.currentData.desc || '', 'link-desc');
 
         // Direction (new field for bidirectional support)
         this._addSelectField(form, 'Direction', ['forward', 'backward', 'bidirectional'], this.currentData.direction || 'forward', 'link-direction');

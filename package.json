@@ -1,0 +1,25 @@
+{
+  "name": "bitfoundry",
+  "version": "1.0.0",
+  "description": "An interactive, hierarchical graph visualization and building tool with drill-down capabilities for ecosystem architectures.",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bhagwati-prasad/bitfoundry.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/bhagwati-prasad/bitfoundry/issues"
+  },
+  "homepage": "https://github.com/bhagwati-prasad/bitfoundry#readme"
+}
