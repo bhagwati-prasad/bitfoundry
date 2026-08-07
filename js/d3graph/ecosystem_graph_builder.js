@@ -26,6 +26,7 @@ class EcosystemGraphBuilder {
             joinIcons: null,
             editIcons: null,
             deleteIcons: null,
+            linkDeleteIcons: null,
             drillDownIcons: null
         };
 
@@ -278,6 +279,9 @@ class EcosystemGraphBuilder {
         if (this.builderElements.deleteIcons) {
             this.builderElements.deleteIcons.remove();
         }
+        if (this.builderElements.linkDeleteIcons) {
+            this.builderElements.linkDeleteIcons.remove();
+        }
         if (this.builderElements.drillDownIcons) {
             this.builderElements.drillDownIcons.remove();
         }
@@ -306,7 +310,18 @@ class EcosystemGraphBuilder {
         
         links.select('text')
             .attr('fill', '#f97316');
+
+        // Remove any builder-mode simulation tick handler we added
+        if (this.graph && this.graph.simulation) {
+            try {
+                this.graph.simulation.on('tick.builder-icons', null);
+            } catch (e) {
+                // ignore
+            }
+        }
     }
+
+    
 
     _addBuilderIcons() {
         const nodes = this.graph.g.selectAll('.node');
@@ -462,6 +477,99 @@ class EcosystemGraphBuilder {
                     this._showLinkContextMenu(event.pageX, event.pageY, d);
                 }
             });
+
+        // Create per-link delete icons and updater (inline, pre-refactor)
+        const linkPaths = this.graph.g.selectAll('.link');
+        const currentLinks = this.graph.getCurrentData().links;
+
+        this.builderElements.linkDeleteIcons = this.graph.g.append('g').selectAll('g')
+            .data(currentLinks).join('g')
+            .attr('class', 'builder-link-delete')
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                event.stopPropagation();
+                const srcLabel = (d.source && d.source.label) ? d.source.label : d.source;
+                const tgtLabel = (d.target && d.target.label) ? d.target.label : d.target;
+                if (confirm(`Delete link between "${srcLabel}" → "${tgtLabel}"?`)) {
+                    this._deleteLink(d.id);
+                }
+            })
+            .on('mouseenter', function() {
+                d3.select(this).select('circle').attr('r', 10.5);
+                d3.select(this).select('text').style('font-size', '12px');
+            })
+            .on('mouseleave', function() {
+                d3.select(this).select('circle').attr('r', 9);
+                d3.select(this).select('text').style('font-size', '10px');
+            });
+
+        this.builderElements.linkDeleteIcons.append('circle')
+            .attr('r', 9)
+            .attr('fill', '#fff')
+            .attr('stroke', '#ef4444');
+
+        this.builderElements.linkDeleteIcons.append('text')
+            .text('−')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '4px')
+            .attr('fill', '#ef4444')
+            .style('font-size', '10px')
+            .style('font-weight', 'bold')
+            .style('pointer-events', 'none');
+
+        // Update positions each tick to stay aligned with moving links
+        const updateLinkIcons = () => {
+            const linksSel = links; // edit icons (existing)
+            const deletesSel = this.graph.g.selectAll('.builder-link-delete');
+
+            // Offsets (pixels)
+            const perpOffset = 22; // perpendicular separation from midpoint
+            const tangentialOffset = 8; // small shift along link direction
+
+            deletesSel.each(function(d) {
+                // Find corresponding path by data id (safer than object identity)
+                const path = linkPaths.filter(function(pData) { return pData && pData.id === d.id; }).node();
+                if (!path) return;
+                try {
+                    const len = path.getTotalLength();
+                    if (!len) return;
+                    const mid = path.getPointAtLength(len / 2);
+                    const pBefore = path.getPointAtLength(Math.max(0, len / 2 - 1));
+                    const pAfter = path.getPointAtLength(Math.min(len, len / 2 + 1));
+                    const dx = pAfter.x - pBefore.x;
+                    const dy = pAfter.y - pBefore.y;
+                    const vlen = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+                    const px = -dy / vlen;
+                    const py = dx / vlen;
+
+                    const tx = (dx / vlen) * tangentialOffset;
+                    const ty = (dy / vlen) * tangentialOffset;
+
+                    d3.select(this).attr('transform', `translate(${mid.x + px * perpOffset + tx}, ${mid.y + py * perpOffset + ty})`);
+                } catch (err) {
+                    // Path not ready or invalid; skip positioning this tick
+                    return;
+                }
+            });
+
+            // We intentionally do NOT reposition the existing edit icon here.
+            // The main renderer places the edit icon at the path midpoint; keep it there
+            // and position the delete icon with an offset so they sit side-by-side.
+        };
+
+        if (this.graph && this.graph.simulation) {
+            // Add a named tick handler so we can remove it later
+            this.graph.simulation.on('tick.builder-icons', updateLinkIcons);
+            // Run once now to position immediately
+            updateLinkIcons();
+            // Ensure icons are on top of link paths
+            try {
+                this.builderElements.linkDeleteIcons.raise();
+                links.raise();
+            } catch (e) {
+                // ignore if raise not supported in older d3
+            }
+        }
 
         // Add context menu for nodes
         nodes.on('contextmenu', (event, d) => {
