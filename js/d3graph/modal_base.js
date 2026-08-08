@@ -36,9 +36,18 @@ class BaseModal {
         this.header = document.createElement("div");
         this.header.className = "modal-header";
 
+        this.headerTop = document.createElement("div");
+        this.headerTop.className = "modal-header-top";
+
         this.title = document.createElement("h3");
         this.title.className = "modal-title";
         if (titleId) this.title.id = titleId;
+
+        this.headerControls = document.createElement("div");
+        this.headerControls.className = "modal-header-controls";
+
+        this.headerContent = document.createElement("div");
+        this.headerContent.className = "modal-header-content";
 
         this.toolbelt = document.createElement("div");
         this.toolbelt.className = "modal-toolbelt";
@@ -57,8 +66,13 @@ class BaseModal {
         this.toolbelt.appendChild(this.toggleBtn);
         this.toolbelt.appendChild(this.closeBtn);
 
-        this.header.appendChild(this.title);
-        this.header.appendChild(this.toolbelt);
+        this.headerControls.appendChild(this.headerContent);
+        this.headerControls.appendChild(this.toolbelt);
+
+        this.headerTop.appendChild(this.title);
+        this.headerTop.appendChild(this.headerControls);
+
+        this.header.appendChild(this.headerTop);
 
         this.content = document.createElement("div");
         this.content.className = contentClass;
@@ -89,6 +103,14 @@ class BaseModal {
 
     setTitle(text) {
         if (this.title) this.title.textContent = text;
+    }
+
+    setHeaderContent(element) {
+        if (!this.headerContent) return;
+        this.headerContent.innerHTML = "";
+        if (element) {
+            this.headerContent.appendChild(element);
+        }
     }
 
     open() {

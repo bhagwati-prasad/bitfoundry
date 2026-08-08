@@ -160,6 +160,9 @@ class EcosystemGraph {
         this._hydrateData(graphData);
         this.render(graphData);
         this.updateBreadcrumbs();
+        if (this.config.callbacks.onViewChange) {
+            this.config.callbacks.onViewChange(graphData, this.viewStack);
+        }
     }
 
     navigateBackTo(index) {
@@ -167,6 +170,9 @@ class EcosystemGraph {
         const targetData = this.viewStack[this.viewStack.length - 1];
         this.render(targetData);
         this.updateBreadcrumbs();
+        if (this.config.callbacks.onViewChange) {
+            this.config.callbacks.onViewChange(targetData, this.viewStack);
+        }
     }
 
     updateBreadcrumbs() {

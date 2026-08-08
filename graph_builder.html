@@ -66,6 +66,9 @@
                         <button id="viewer-mode-btn" class="mode-btn active">
                             <span>👁️</span> View
                         </button>
+                        <button id="slideshow-mode-btn" class="mode-btn">
+                            <span>🎬</span> SlideShow
+                        </button>
                         <button id="builder-mode-btn" class="mode-btn">
                             <span>🔧</span> Build
                         </button>
@@ -175,6 +178,7 @@
     <script type="text/javascript" src="./js/lib/context_menu.js"></script>
     <script type="text/javascript" src="./js/d3graph/property_editor.js"></script>
     <script type="text/javascript" src="./js/d3graph/ecosystem_graph.js"></script>
+    <script type="text/javascript" src="./js/d3graph/slideshow_view.js"></script>
     <script type="text/javascript" src="./js/d3graph/ecosystem_graph_builder.js"></script>
 
     <script>
@@ -486,6 +490,25 @@
                 }
             });
 
+            const viewerBtn = domCache.get('viewerBtn');
+            const slideshowBtn = domCache.get('slideshowBtn');
+            const builderBtn = domCache.get('builderBtn');
+            const saveBtn = domCache.get('saveBtn');
+
+            // Initialize slideshow modal
+            const slideshowView = new SlideShowModal(graph, { locked: false });
+            if (slideshowBtn) {
+                slideshowView.setTriggerButton(slideshowBtn);
+                slideshowBtn.addEventListener('click', () => {
+                    slideshowView.open();
+                    slideshowBtn.classList.add('active');
+                    viewerBtn?.classList.remove('active');
+                    builderBtn?.classList.remove('active');
+                    builder.disableBuilderMode();
+                    saveBtn.style.display = 'none';
+                });
+            }
+
             // Initialize builder
             builder = new EcosystemGraphBuilder(graph, myGroups);
             
@@ -516,13 +539,11 @@
             }, 30000); // Auto-save every 30 seconds
 
             // Setup mode toggle
-            const viewerBtn = domCache.get('viewerBtn');
-            const builderBtn = domCache.get('builderBtn');
-            const saveBtn = domCache.get('saveBtn');
 
             viewerBtn.addEventListener('click', () => {
                 builder.disableBuilderMode();
                 viewerBtn.classList.add('active');
+                slideshowBtn?.classList.remove('active');
                 builderBtn.classList.remove('active');
                 saveBtn.style.display = 'none';
             });
@@ -530,6 +551,7 @@
             builderBtn.addEventListener('click', () => {
                 builder.enableBuilderMode();
                 builderBtn.classList.add('active');
+                slideshowBtn?.classList.remove('active');
                 viewerBtn.classList.remove('active');
                 saveBtn.style.display = 'inline-flex';
             });

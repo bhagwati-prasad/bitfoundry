@@ -15,6 +15,7 @@ class DOMCache {
         // Button elements
         this.set('saveBtn', document.getElementById('save-graph-btn'));
         this.set('viewerBtn', document.getElementById('viewer-mode-btn'));
+        this.set('slideshowBtn', document.getElementById('slideshow-mode-btn'));
         this.set('builderBtn', document.getElementById('builder-mode-btn'));
         this.set('importBtn', document.getElementById('import-btn'));
         this.set('exportBtn', document.getElementById('export-btn'));
