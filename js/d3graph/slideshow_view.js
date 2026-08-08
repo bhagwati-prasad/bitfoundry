@@ -279,7 +279,7 @@ class SlideShowModal extends BaseModal {
         if (node.subGraph) props.push({ label: 'Subgraph', value: 'Available' });
         if (node.desc || node.info) props.push({ label: 'Summary', value: node.desc || node.info });
 
-        const infoText = node.info || node.desc || '';
+        const infoText = this._getDescriptionText(node);
         this.bodyEl.innerHTML = `
             <div class="slideshow-slide-description"></div>
             <div class="slideshow-slide-properties"></div>
@@ -315,7 +315,7 @@ class SlideShowModal extends BaseModal {
         if (link.label) props.push({ label: 'Label', value: link.label });
         if (link.desc || link.info) props.push({ label: 'Summary', value: link.desc || link.info });
 
-        const infoText = link.info || link.desc || '';
+        const infoText = this._getDescriptionText(link);
         this.bodyEl.innerHTML = `
             <div class="slideshow-slide-description"></div>
             <div class="slideshow-slide-properties"></div>
@@ -328,6 +328,26 @@ class SlideShowModal extends BaseModal {
         propertiesContainer.innerHTML = this._buildPropertyList(props);
     }
 
+    _getDescriptionText(item) {
+        if (!item) return '';
+
+        const candidates = [
+            item.desc,
+            item.info,
+            item.description,
+            item.summary,
+            item.details
+        ];
+
+        for (const candidate of candidates) {
+            if (typeof candidate === 'string' && candidate.trim()) {
+                return candidate;
+            }
+        }
+
+        return '';
+    }
+
     _buildPropertyList(properties) {
         if (!properties.length) {
             return '<div class="slideshow-no-properties">No additional properties.</div>';
@@ -336,7 +356,7 @@ class SlideShowModal extends BaseModal {
         return `<dl class="slideshow-property-list">${properties.map(prop => `
             <div class="slideshow-property-row">
                 <dt>${GraphUtils.escapeHtml(prop.label)}</dt>
-                <dd>${GraphUtils.escapeHtml(String(prop.value || '—'))}</dd>
+                <dd><pre>${GraphUtils.escapeHtml(String(prop.value || '—'))}</pre></dd>
             </div>
         `).join('')}</dl>`;
     }
