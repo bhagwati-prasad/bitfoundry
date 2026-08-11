@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://systema.dev/schema/architecture-planner.json",
+  "title": "Systema Architecture Planner Schema",
+  "description": "Canonical schema for Systema architecture documents. The document is recursive: every node may contain a subGraph, and nodes inside a subGraph may themselves contain subGraphs without a schema-imposed depth limit. The metadata legend is a superset of the groups: every group must have a corresponding legend entry with the same ID, while the legend may also contain entries for nodes, links, statuses, annotations, or other concepts. A legend entry is not a copy of a group; it contains only legend-specific presentation properties.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metadata",
+    "data"
+  ],
+  "properties": {
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "data": {
+      "$ref": "#/$defs/graph"
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "legend",
+        "exportDate"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "exportDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "legend": {
+          "type": "object",
+          "description": "Superset of the groups. Every data.groups key must have a legend entry with the same key. Additional legend entries are allowed and may describe concepts other than groups.",
+          "propertyNames": {
+            "format": "uuid"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/legendItem"
+          }
+        }
+      }
+    },
+    "legendItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "color",
+        "label",
+        "radius"
+      ],
+      "description": "Presentation-only legend information. It intentionally does not duplicate the complete Group object. A legend entry may represent a group or another architecture concept.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Concept represented by this legend entry, e.g. group, node, link, status, annotation, or a domain-specific type."
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 1
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "color",
+        "radius",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "color": {
+          "$ref": "#/$defs/color"
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "groups",
+        "nodes",
+        "links"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "groups": {
+          "type": "object",
+          "description": "Groups used by nodes in this graph. Every group must have a matching entry in metadata.legend.",
+          "propertyNames": {
+            "format": "uuid"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "group",
+        "x",
+        "y",
+        "r"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "$ref": "#/$defs/uuid",
+          "description": "ID of a group defined in the containing graph."
+        },
+        "desc": {
+          "type": "string"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string"
+        },
+        "subGraph": {
+          "$ref": "#/$defs/subGraph"
+        }
+      }
+    },
+    "subGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "nodes",
+        "links"
+      ],
+      "description": "Recursive graph owned by a node. Every node inside this graph can itself contain another subGraph.",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "groups": {
+          "type": "object",
+          "description": "Optional graph-local groups. If omitted, nodes may use groups inherited from the parent graph according to the application's group-resolution policy.",
+          "propertyNames": {
+            "format": "uuid"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "target",
+        "type",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "source": {
+          "$ref": "#/$defs/uuid",
+          "description": "ID of a node in the containing graph."
+        },
+        "target": {
+          "$ref": "#/$defs/uuid",
+          "description": "ID of a node in the containing graph."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string"
+        },
+        "desc": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "x-systema-semantic-invariants": {
+    "legendIsSupersetOfGroups": {
+      "description": "Every group must be represented in the metadata legend, but the legend may contain additional entries that do not represent groups.",
+      "rule": "set(data.groups.keys()) is a subset of set(metadata.legend.keys())"
+    },
+    "groupLegendIdentity": {
+      "description": "For every group, the group's object key is its canonical ID and that same ID is used as the legend key.",
+      "rule": "for each groupId in data.groups: data.groups[groupId].id == groupId AND metadata.legend[groupId] exists"
+    },
+    "groupLegendType": {
+      "description": "The legend entry corresponding to a group must identify itself as a group. Other legend entries may use other type values.",
+      "rule": "for each groupId in data.groups: metadata.legend[groupId].type == 'group'"
+    },
+    "legendDoesNotMirrorGroup": {
+      "description": "Legend entries are presentation metadata and do not need to copy all Group properties. Group title, description, and other group properties remain authoritative in data.groups.",
+      "rule": "legend entries are not required to duplicate Group properties"
+    },
+    "nodeGroupReference": {
+      "description": "Every node.group must reference a group available to that node's graph.",
+      "rule": "node.group exists in the containing graph's groups or permitted inherited group scope"
+    },
+    "recursiveSubGraphs": {
+      "description": "Every node may have a subGraph. A subGraph contains nodes, and those nodes may again have subGraphs recursively without a schema-imposed depth limit.",
+      "rule": "node.subGraph recursively conforms to #/$defs/subGraph"
+    },
+    "linkEndpoints": {
+      "description": "Every link source and target must reference nodes in its containing graph.",
+      "rule": "link.source and link.target exist in the containing graph's nodes"
+    },
+    "uniqueIds": {
+      "description": "Node and link IDs must be unique within their containing graph.",
+      "rule": "node.id and link.id are unique within each graph"
+    }
+  }
+}
