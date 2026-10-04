@@ -436,7 +436,7 @@
             const scrub = (node) => {
                 node.title = String(node.title ?? 'Untitled');
                 node.icon = String(node.icon ?? '📄');
-                node.description = '';
+                node.description = String(node.description ?? '');
                 node.children = Array.isArray(node.children) ? node.children.map(scrub) : [];
                 return node;
             };
@@ -615,8 +615,13 @@
 
             if (['unicode', 'ascii', 'compact', 'depth'].includes(mode)) {
                 let includeIcons = true;
+                let includeDescriptions = true;
                 addCheck('Show icons', true, (event) => {
                     includeIcons = event.target.checked;
+                    renderText();
+                });
+                addCheck('Show description', includeDescriptions, (event) => {
+                    includeDescriptions = event.target.checked;
                     renderText();
                 });
                 const pre = document.createElement('pre');
@@ -625,9 +630,9 @@
                     const renderer = new ASCIIRenderer();
                     const model = safeVisualizerTree();
                     let output;
-                    if (mode === 'compact') output = renderer.renderCompact(model, { showIcon: includeIcons });
-                    else if (mode === 'depth') output = renderer.renderWithDepth(model, { showIcon: includeIcons });
-                    else output = renderer.render(model, { showIcon: includeIcons, useUnicode: mode === 'unicode' });
+                    if (mode === 'compact') output = renderer.renderCompact(model, { showIcon: includeIcons, showDescription: includeDescriptions });
+                    else if (mode === 'depth') output = renderer.renderWithDepth(model, { showIcon: includeIcons, showDescription: includeDescriptions });
+                    else output = renderer.render(model, { showIcon: includeIcons, showDescription: includeDescriptions, useUnicode: mode === 'unicode' });
                     pre.textContent = output;
                 };
                 addCopyButton(() => pre.textContent);
@@ -797,6 +802,7 @@
             if (!node) return;
             node.description = event.target.value;
             syncCodeViews();
+            renderVisualizer();
         });
         $('#add-child').addEventListener('click', () => createNode(byId(selectedId), 'New node'));
         $('#add-sibling').addEventListener('click', addSibling);

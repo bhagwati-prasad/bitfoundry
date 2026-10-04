@@ -36,6 +36,7 @@ export class ASCIIRenderer {
      * @param {Object} options - Rendering options
      * @param {boolean} options.showIcon - Show icons
      * @param {boolean} options.showId - Show node IDs
+     * @param {boolean} options.showDescription - Show node descriptions
      * @param {boolean} options.useUnicode - Use Unicode characters
      * @returns {string} ASCII representation
      */
@@ -43,6 +44,7 @@ export class ASCIIRenderer {
         const {
             showIcon = true,
             showId = false,
+            showDescription = false,
             useUnicode = true
         } = options;
 
@@ -56,7 +58,7 @@ export class ASCIIRenderer {
         }
 
         const lines = [];
-        this._renderNode(rootNode, '', true, lines, showIcon, showId);
+        this._renderNode(rootNode, '', true, lines, showIcon, showId, showDescription);
         return lines.join('\n');
     }
 
@@ -64,7 +66,7 @@ export class ASCIIRenderer {
      * Recursively renders a node and its children
      * @private
      */
-    _renderNode(node, prefix, isLast, lines, showIcon, showId) {
+    _renderNode(node, prefix, isLast, lines, showIcon, showId, showDescription) {
         const chars = this.getCharSet();
         
         // Build the node line
@@ -93,6 +95,9 @@ export class ASCIIRenderer {
         if (showId) {
             line += ` [${node.id}]`;
         }
+        if (showDescription && node.description) {
+            line += ` — ${node.description}`;
+        }
         
         lines.push(line);
         
@@ -106,7 +111,7 @@ export class ASCIIRenderer {
                 // If this is not the last child, add vertical line, otherwise add spaces
                 childPrefix += isLast ? '    ' : chars.vertical + '   ';
             }
-            this._renderNode(child, childPrefix, isLastChild, lines, showIcon, showId);
+            this._renderNode(child, childPrefix, isLastChild, lines, showIcon, showId, showDescription);
         });
     }
 
@@ -115,6 +120,7 @@ export class ASCIIRenderer {
      * @param {Tree|TreeNode} treeOrNode - Tree or TreeNode to render
      * @param {HTMLElement} element - Target element
      * @param {Object} options - Rendering options
+     * @param {boolean} options.showDescription - Show node descriptions
      */
     renderToElement(treeOrNode, element, options = {}) {
         const ascii = this.render(treeOrNode, options);
@@ -131,29 +137,33 @@ export class ASCIIRenderer {
      * Renders tree as a compact horizontal format
      * @param {Tree|TreeNode} treeOrNode - Tree or TreeNode to render
      * @param {Object} options - Rendering options
+     * @param {boolean} options.showDescription - Show node descriptions
      * @returns {string} Compact ASCII representation
      */
     renderCompact(treeOrNode, options = {}) {
-        const { showIcon = true } = options;
+        const { showIcon = true, showDescription = false } = options;
         const rootNode = treeOrNode.root || treeOrNode;
         
         if (!rootNode) {
             return '(empty tree)';
         }
 
-        return this._renderNodeCompact(rootNode, showIcon);
+        return this._renderNodeCompact(rootNode, showIcon, showDescription);
     }
 
     /**
      * Recursively renders node in compact format
      * @private
      */
-    _renderNodeCompact(node, showIcon) {
+    _renderNodeCompact(node, showIcon, showDescription) {
         let result = showIcon ? `${node.icon} ${node.title}` : node.title;
+        if (showDescription && node.description) {
+            result += ` — ${node.description}`;
+        }
         
         if (node.children.length > 0) {
             const childStrings = node.children.map(child => 
-                this._renderNodeCompact(child, showIcon)
+                this._renderNodeCompact(child, showIcon, showDescription)
             );
             result += ` [${childStrings.join(', ')}]`;
         }
@@ -165,10 +175,11 @@ export class ASCIIRenderer {
      * Renders tree with depth indicators
      * @param {Tree|TreeNode} treeOrNode - Tree or TreeNode to render
      * @param {Object} options - Rendering options
+     * @param {boolean} options.showDescription - Show node descriptions
      * @returns {string} ASCII representation with depth
      */
     renderWithDepth(treeOrNode, options = {}) {
-        const { showIcon = true } = options;
+        const { showIcon = true, showDescription = false } = options;
         const rootNode = treeOrNode.root || treeOrNode;
         
         if (!rootNode) {
@@ -176,7 +187,7 @@ export class ASCIIRenderer {
         }
 
         const lines = [];
-        this._renderNodeWithDepth(rootNode, 0, lines, showIcon);
+        this._renderNodeWithDepth(rootNode, 0, lines, showIcon, showDescription);
         return lines.join('\n');
     }
 
@@ -184,14 +195,15 @@ export class ASCIIRenderer {
      * Recursively renders node with depth indicator
      * @private
      */
-    _renderNodeWithDepth(node, depth, lines, showIcon) {
+    _renderNodeWithDepth(node, depth, lines, showIcon, showDescription) {
         const indent = '  '.repeat(depth);
         const depthIndicator = `[${depth}]`;
         const icon = showIcon ? `${node.icon} ` : '';
-        lines.push(`${indent}${depthIndicator} ${icon}${node.title}`);
+        const description = showDescription && node.description ? ` — ${node.description}` : '';
+        lines.push(`${indent}${depthIndicator} ${icon}${node.title}${description}`);
         
         node.children.forEach(child => {
-            this._renderNodeWithDepth(child, depth + 1, lines, showIcon);
+            this._renderNodeWithDepth(child, depth + 1, lines, showIcon, showDescription);
         });
     }
 }
