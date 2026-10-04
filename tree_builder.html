@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Builder | Bitfoundry</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #202b29;
+            --muted: #687571;
+            --paper: #f4f5ef;
+            --panel: #fffefa;
+            --line: #d8ded4;
+            --forest: #234b40;
+            --forest-soft: #e5eee8;
+            --coral: #bd5a42;
+            --coral-soft: #f7e8e2;
+            --gold: #b37b25;
+            --shadow: 0 14px 38px rgba(32, 43, 41, .08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            height: 100vh;
+            min-width: 320px;
+            margin: 0;
+            overflow: hidden;
+            color: var(--ink);
+            background-color: var(--paper);
+            background-image: linear-gradient(rgba(35, 75, 64, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(35, 75, 64, .035) 1px, transparent 1px);
+            background-size: 28px 28px;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        }
+
+        button, input, select, textarea { font: inherit; }
+        button { color: inherit; }
+
+        .page { display: flex; height: 100%; flex-direction: column; }
+
+        .masthead {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 0;
+            animation: arrive .45s ease-out both;
+        }
+
+        .eyebrow{
+            margin: 0 0 8px;
+            color: var(--coral);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        h2, h3, p { margin-top: 0; }
+        h2 { font-family: Georgia, "Times New Roman", serif; }
+
+        .tree-count {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-shrink: 0;
+            padding: 4px 12px;
+            border-left: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .tree-count strong { color: var(--forest); font: 600 18px Georgia, serif; }
+
+        .workspace {
+            display: grid;
+            flex: 1;
+            min-height: 0;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            align-items: stretch;
+            gap: 12px;
+        }
+
+        .panel {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--panel);
+            box-shadow: var(--shadow);
+            animation: arrive .5s ease-out both;
+        }
+        .panel:nth-child(2) { animation-delay: .08s; }
+
+        .panel-body { display: flex; min-height: 0; flex: 1; flex-direction: column; overflow: auto; padding: 12px 16px 16px; }
+
+        .segmented, .toolbar, .visual-controls, .node-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .segmented {
+            padding: 4px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: #f3f5ef;
+        }
+        .segmented button {
+            min-height: 34px;
+            padding: 0 11px;
+            border: 0;
+            border-radius: 3px;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .segmented button[aria-pressed="true"] { background: var(--forest); color: white; }
+
+        .builder-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+        .button {
+            min-height: 35px;
+            padding: 7px 11px;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            transition: background .16s ease, border-color .16s ease, transform .16s ease;
+        }
+        .button:hover { border-color: #9caea4; background: #f6f8f3; }
+        .button:active { transform: translateY(1px); }
+        .button-primary { border-color: var(--forest); background: var(--forest); color: white; }
+        .button-primary:hover { border-color: #17372e; background: #17372e; }
+        .button-danger { color: #a2402c; }
+        .button:disabled { cursor: not-allowed; opacity: .45; }
+
+        .editor-view[hidden] { display: none; }
+        #graphical-view { min-height: 0; flex: 1; }
+        #javascript-view:not([hidden]), #json-view:not([hidden]) { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+        .graph-layout { display: grid; height: 100%; min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(190px, .78fr); gap: 12px; }
+        .tree-outline, .properties {
+            min-width: 0;
+            min-height: 0;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: #fcfcf8;
+        }
+        .tree-outline { min-height: 0; overflow: auto; padding: 10px; }
+        .tree-list, .tree-list ul { margin: 0; padding: 0 0 0 15px; list-style: none; }
+        .tree-list { padding-left: 0; }
+        .tree-list li { margin: 2px 0; }
+        .tree-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 32px;
+            padding: 4px 7px;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            cursor: grab;
+            user-select: none;
+        }
+        .tree-row:hover { background: #f0f4ee; }
+        .tree-row.selected { border-color: #a9c2b4; background: var(--forest-soft); color: var(--forest); }
+        .tree-row.dragging { opacity: .42; }
+        .tree-row.drop-before { box-shadow: inset 0 2px var(--coral); }
+        .tree-row.drop-after { box-shadow: inset 0 -2px var(--coral); }
+        .tree-row.drop-child { outline: 2px solid var(--coral); outline-offset: -2px; }
+        .node-icon { width: 21px; flex: 0 0 21px; text-align: center; font-size: 16px; }
+        .node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+        .tree-hint { margin: 9px 1px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+        .properties { padding: 13px; }
+        .properties h3 { margin: 0 0 12px; font-size: 13px; }
+        .field { display: grid; gap: 5px; margin-bottom: 12px; }
+        .field label { color: var(--muted); font-size: 11px; font-weight: 800; }
+        .field input, .field textarea, .field select, .code-editor {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            outline: none;
+            background: white;
+            color: var(--ink);
+        }
+        .field input, .field select { min-height: 35px; padding: 6px 8px; }
+        .field textarea { min-height: 75px; resize: vertical; padding: 8px; }
+        .field input:focus, .field textarea:focus, .field select:focus, .code-editor:focus { border-color: #6c9a83; box-shadow: 0 0 0 2px rgba(35, 75, 64, .1); }
+        .icon-entry { display: grid; grid-template-columns: 1fr 43px; gap: 6px; }
+        .icon-entry select { min-width: 0; }
+        .icon-entry input { text-align: center; font-size: 17px; }
+        .node-actions { margin-top: 15px; }
+
+        .code-notice, .feedback {
+            min-height: 21px;
+            margin: 0 0 9px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .code-notice strong { color: var(--coral); }
+        .code-editor {
+            display: block;
+            min-height: 0;
+            flex: 1;
+            padding: 14px;
+            resize: vertical;
+            background: #202c29;
+            color: #e8eee8;
+            font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            tab-size: 2;
+        }
+        .editor-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+        .feedback { margin: 0; }
+        .feedback.error { color: #a2402c; }
+        .feedback.success { color: var(--forest); }
+
+        .visual-head { align-items: center; }
+        .visual-controls-wrap { flex: 0 0 auto; padding: 9px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between }
+        .visualizer-modes { display: flex; flex-wrap: wrap; gap: 5px; }
+        .visualizer-modes button { min-height: 31px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 3px; background: white; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 700; }
+        .visualizer-modes button[aria-pressed="true"] { border-color: var(--forest); background: var(--forest); color: white; }
+        .visual-controls { min-height: 34px; }
+        .visual-controls label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; }
+        .visual-controls input { accent-color: var(--forest); }
+        .visual-controls .spacer { flex: 1; }
+        .visual-stage { min-height: 0; flex: 1; overflow: auto; padding: 14px; background: linear-gradient(135deg, rgba(35, 75, 64, .025), transparent 48%), #fcfcf8; }
+        .visual-stage pre { min-width: max-content; margin: 0; color: var(--ink); font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        .visual-stage .directory-tree, .visual-stage .drilldown-tree { font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+        .visual-stage .directory-tree .tree-node-header:hover { background: #edf2ec; }
+        .visual-stage .drilldown-breadcrumb { background: #f1f4ee; }
+        .visual-stage .breadcrumb-item { color: var(--forest); }
+        .visual-stage .drilldown-level-title { font: 500 18px Georgia, serif; }
+        .visual-stage .drilldown-node-card { border-radius: 4px; }
+        .visual-stage .drilldown-node-card:hover { border-color: #88a797; box-shadow: 0 3px 10px rgba(35, 75, 64, .1); }
+        .visual-stage .drilldown-node-card.selected { border-color: var(--forest); background: var(--forest-soft); }
+        .visual-stage .node-description { color: var(--muted); }
+        .visual-stage .breadcrumb-item.active { color: var(--ink); }
+
+        .context-menu {
+            position: fixed;
+            z-index: 10;
+            min-width: 160px;
+            padding: 5px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: var(--panel);
+            box-shadow: 0 8px 24px rgba(32, 43, 41, .18);
+        }
+        .context-menu[hidden] { display: none; }
+        .context-menu button { display: block; width: 100%; padding: 8px 9px; border: 0; border-radius: 2px; background: transparent; cursor: pointer; text-align: left; font-size: 12px; }
+        .context-menu button:hover { background: var(--forest-soft); }
+        .context-menu button:last-child { color: #a2402c; }
+
+        @keyframes arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 1060px) {
+            body { height: auto; min-height: 100vh; overflow: auto; }
+            .page { height: auto; min-height: 100vh; }
+            .workspace { grid-template-columns: minmax(0, 1fr); }
+            .panel { min-height: 560px; }
+            .visual-stage { min-height: 360px; }
+        }
+        @media (max-width: 620px) {
+            .page { padding: 8px; }
+            .panel { min-height: 0; }
+            .panel-head { padding: 11px 12px; }
+            .panel-body { min-height: 500px; padding: 10px 12px 12px; }
+            .panel-head h2 { font-size: 20px; }
+            .graph-layout { height: auto; grid-template-columns: minmax(0, 1fr); }
+            .tree-outline { min-height: 200px; max-height: 300px; }
+            .properties { min-height: 0; }
+            .builder-tools { align-items: start; flex-direction: column; }
+            .segmented { width: 100%; }
+            .segmented button { flex: 1; padding-inline: 7px; }
+            .visual-stage { min-height: 280px; padding: 10px; }
+            .code-editor { min-height: 300px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <section class="workspace" aria-label="Tree builder workspace">
+            <section class="panel" aria-labelledby="builder-title">
+                <div class="panel-body">
+                    <div class="builder-tools">
+                        <div class="segmented" role="group" aria-label="Builder mode">
+                            <button type="button" data-mode="graphical" aria-pressed="true">Graphical</button>
+                            <button type="button" data-mode="javascript" aria-pressed="false">JavaScript</button>
+                            <button type="button" data-mode="json" aria-pressed="false">JSON</button>
+                        </div>
+                        <div id="graph-toolbar" class="toolbar">
+                            <button class="button" type="button" id="add-child">+ Child</button>
+                            <button class="button" type="button" id="add-sibling">+ Sibling</button>
+                            <button class="button button-danger" type="button" id="delete-node">Delete</button>
+                        </div>
+                        <div class="tree-count" aria-live="polite"><strong id="node-count">0</strong><span>nodes</span></div>
+                    </div>
+
+                    <div class="editor-view" id="graphical-view">
+                        <div class="graph-layout">
+                            <div>
+                                <div class="tree-outline" id="tree-outline" aria-label="Editable tree"></div>
+                                <p class="tree-hint">Select to edit. Right-click for actions. Drag onto a node to nest, or near its top/bottom edge to reorder.</p>
+                            </div>
+                            <form class="properties" id="node-form" autocomplete="off">
+                                <h3>Selected node</h3>
+                                <div class="field"><label for="node-title">Name</label><input id="node-title" type="text" maxlength="120" required></div>
+                                <div class="field"><label for="node-icon">Icon</label><div class="icon-entry"><select id="icon-picker" aria-label="Choose an icon"></select><input id="node-icon" type="text" maxlength="8" aria-label="Custom icon"></div></div>
+                                <div class="field"><label for="node-description">Description</label><textarea id="node-description" maxlength="500"></textarea></div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="editor-view" id="javascript-view" hidden>
+                        <p class="code-notice"><strong>Trusted code:</strong> JavaScript runs in this page. Return a <code>Tree</code>, <code>TreeNode</code>, or plain node object.</p>
+                        <textarea class="code-editor" id="javascript-editor" spellcheck="false" aria-label="JavaScript tree definition"></textarea>
+                        <div class="editor-actions"><p class="feedback" id="javascript-feedback" aria-live="polite"></p><button class="button button-primary" type="button" id="run-javascript">Run JavaScript</button></div>
+                    </div>
+
+                    <div class="editor-view" id="json-view" hidden>
+                        <p class="code-notice">Edit the tree JSON, then apply it to the visualizer. The current tree stays intact if the document is invalid.</p>
+                        <textarea class="code-editor" id="json-editor" spellcheck="false" aria-label="Tree JSON"></textarea>
+                        <div class="editor-actions"><p class="feedback" id="json-feedback" aria-live="polite"></p><button class="button button-primary" type="button" id="apply-json">Apply JSON</button></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" aria-labelledby="visualizer-title">
+                <div class="visual-controls-wrap">
+                    <div class="visualizer-modes" id="visualizer-modes" role="group" aria-label="Visualization type">
+                        <button type="button" data-visualizer="unicode" aria-pressed="true">Unicode</button>
+                        <button type="button" data-visualizer="ascii" aria-pressed="false">ASCII</button>
+                        <button type="button" data-visualizer="compact" aria-pressed="false">Compact</button>
+                        <button type="button" data-visualizer="depth" aria-pressed="false">Depth</button>
+                        <button type="button" data-visualizer="directory" aria-pressed="false">Directory</button>
+                        <button type="button" data-visualizer="drilldown" aria-pressed="false">Drill-down</button>
+                    </div>
+                    <div class="visual-controls" id="visual-controls"></div>
+                </div>
+                <div class="visual-stage" id="visual-stage" aria-live="polite"></div>
+            </section>
+        </section>
+    </main>
+
+    <div class="context-menu" id="context-menu" role="menu" hidden>
+        <button type="button" data-action="child" role="menuitem">Add child</button>
+        <button type="button" data-action="sibling" role="menuitem">Add sibling</button>
+        <button type="button" data-action="delete" role="menuitem">Delete node</button>
+    </div>
+
+    <script type="module">
+        import { Tree, TreeNode, ASCIIRenderer, DirectoryRenderer, DrillDownRenderer } from './js/tree/index.js';
+
+        const icons = ['📁', '📄', '📝', '📊', '🖼️', '🎵', '💻', '🌳', '🚀', '📦', '🔧', '⭐', '💡', '🔒', '🌐', '📱'];
+        const root = new TreeNode({ title: 'My workspace', description: 'A sample project tree', icon: '🌳' });
+        const product = new TreeNode({ title: 'Product', description: 'Product planning and design', icon: '📁' });
+        const research = new TreeNode({ title: 'Research', description: 'Customer interviews and notes', icon: '📝' });
+        const design = new TreeNode({ title: 'Design system', description: 'Shared interface patterns', icon: '🎨' });
+        const engineering = new TreeNode({ title: 'Engineering', description: 'Implementation and delivery', icon: '📁' });
+        const roadmap = new TreeNode({ title: 'Roadmap.md', description: 'Upcoming milestones', icon: '📄' });
+        const prototype = new TreeNode({ title: 'Prototype', description: 'Early interaction model', icon: '🚀' });
+        product.addChild(research);
+        product.addChild(design);
+        engineering.addChild(roadmap);
+        engineering.addChild(prototype);
+        root.addChild(product);
+        root.addChild(engineering);
+
+        let tree = new Tree(root);
+        let selectedId = root.id;
+        let draggedId = null;
+        let contextNodeId = null;
+        let jsonDraftDirty = false;
+        let javascriptDraftDirty = false;
+        let directoryRenderer = new DirectoryRenderer();
+        let drilldownRenderer = new DrillDownRenderer();
+        let visualizerType = 'unicode';
+
+        const byId = (id) => tree.findById(id);
+        const $ = (selector) => document.querySelector(selector);
+
+        function getJavascriptSource() {
+            return `const data = ${JSON.stringify(tree.toJSON(), null, 2)};\nreturn Tree.fromJSON(data);`;
+        }
+
+        function setFeedback(target, message, kind = '') {
+            target.textContent = message;
+            target.className = `feedback${kind ? ` ${kind}` : ''}`;
+        }
+
+        function syncCodeViews(force = false) {
+            const jsonEditor = $('#json-editor');
+            const jsEditor = $('#javascript-editor');
+            if (!jsonDraftDirty && (force || document.activeElement !== jsonEditor)) jsonEditor.value = JSON.stringify(tree.toJSON(), null, 2);
+            if (!javascriptDraftDirty && (force || document.activeElement !== jsEditor)) jsEditor.value = getJavascriptSource();
+        }
+
+        function nodeCount() {
+            let count = 0;
+            tree.traversePreOrder(() => count++);
+            $('#node-count').textContent = count;
+        }
+
+        function safeVisualizerTree() {
+            const json = tree.toJSON();
+            const scrub = (node) => {
+                node.title = String(node.title ?? 'Untitled');
+                node.icon = String(node.icon ?? '📄');
+                node.description = '';
+                node.children = Array.isArray(node.children) ? node.children.map(scrub) : [];
+                return node;
+            };
+            return Tree.fromJSON({ root: scrub(json.root) });
+        }
+
+        function renderGraph(updateForm = true) {
+            const host = $('#tree-outline');
+            const list = document.createElement('ul');
+            list.className = 'tree-list';
+            const append = (node, parentList) => {
+                const item = document.createElement('li');
+                const row = document.createElement('div');
+                row.className = `tree-row${node.id === selectedId ? ' selected' : ''}`;
+                row.dataset.nodeId = node.id;
+                row.draggable = node !== tree.root;
+                const icon = document.createElement('span');
+                icon.className = 'node-icon';
+                icon.textContent = node.icon;
+                const title = document.createElement('span');
+                title.className = 'node-label';
+                title.textContent = node.title;
+                row.append(icon, title);
+                row.addEventListener('click', () => selectNode(node.id));
+                row.addEventListener('contextmenu', (event) => {
+                    event.preventDefault();
+                    selectNode(node.id);
+                    showContextMenu(event.clientX, event.clientY, node.id);
+                });
+                row.addEventListener('dragstart', (event) => {
+                    draggedId = node.id;
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', node.id);
+                    requestAnimationFrame(() => row.classList.add('dragging'));
+                });
+                row.addEventListener('dragend', () => {
+                    draggedId = null;
+                    document.querySelectorAll('.tree-row').forEach((element) => element.classList.remove('dragging', 'drop-before', 'drop-after', 'drop-child'));
+                });
+                row.addEventListener('dragover', (event) => {
+                    if (!draggedId || draggedId === node.id) return;
+                    event.preventDefault();
+                    const rect = row.getBoundingClientRect();
+                    const ratio = (event.clientY - rect.top) / rect.height;
+                    const position = node === tree.root || (ratio >= .27 && ratio <= .73) ? 'child' : ratio < .5 ? 'before' : 'after';
+                    row.classList.remove('drop-before', 'drop-after', 'drop-child');
+                    row.classList.add(`drop-${position}`);
+                    event.dataTransfer.dropEffect = 'move';
+                });
+                row.addEventListener('dragleave', (event) => {
+                    if (!row.contains(event.relatedTarget)) row.classList.remove('drop-before', 'drop-after', 'drop-child');
+                });
+                row.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    const rect = row.getBoundingClientRect();
+                    const ratio = (event.clientY - rect.top) / rect.height;
+                    const position = node === tree.root || (ratio >= .27 && ratio <= .73) ? 'child' : ratio < .5 ? 'before' : 'after';
+                    moveNode(event.dataTransfer.getData('text/plain') || draggedId, node.id, position);
+                });
+                item.appendChild(row);
+                if (node.children.length) {
+                    const children = document.createElement('ul');
+                    node.children.forEach((child) => append(child, children));
+                    item.appendChild(children);
+                }
+                parentList.appendChild(item);
+            };
+            append(tree.root, list);
+            host.replaceChildren(list);
+            if (updateForm) updateProperties();
+        }
+
+        function updateProperties() {
+            const node = byId(selectedId) || tree.root;
+            selectedId = node.id;
+            $('#node-title').value = node.title;
+            $('#node-icon').value = node.icon;
+            $('#node-description').value = node.description;
+            $('#icon-picker').value = icons.includes(node.icon) ? node.icon : '';
+            $('#delete-node').disabled = node === tree.root;
+            $('#add-sibling').disabled = node === tree.root;
+        }
+
+        function selectNode(id) {
+            if (!byId(id)) return;
+            selectedId = id;
+            renderGraph();
+            hideContextMenu();
+        }
+
+        function renderVisualizer() {
+            const mode = visualizerType;
+            const host = $('#visual-stage');
+            const controls = $('#visual-controls');
+            controls.replaceChildren();
+            document.querySelectorAll('[data-visualizer]').forEach((button) => {
+                button.setAttribute('aria-pressed', String(button.dataset.visualizer === mode));
+            });
+            const addCheck = (labelText, checked, onChange) => {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = checked;
+                input.addEventListener('change', onChange);
+                label.append(input, document.createTextNode(labelText));
+                controls.appendChild(label);
+            };
+            const addCopyButton = (getText) => {
+                const spacer = document.createElement('span');
+                spacer.className = 'spacer';
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'button';
+                button.textContent = 'Copy text';
+                button.addEventListener('click', async () => {
+                    const text = getText();
+                    try {
+                        if (navigator.clipboard && window.isSecureContext) {
+                            await navigator.clipboard.writeText(text);
+                        } else {
+                            const temporary = document.createElement('textarea');
+                            temporary.value = text;
+                            temporary.style.position = 'fixed';
+                            temporary.style.opacity = '0';
+                            document.body.appendChild(temporary);
+                            temporary.select();
+                            const copied = document.execCommand('copy');
+                            temporary.remove();
+                            if (!copied) throw new Error('Clipboard access is unavailable');
+                        }
+                        button.textContent = 'Copied';
+                    } catch (error) {
+                        button.textContent = 'Copy failed';
+                        button.title = error.message;
+                    }
+                    window.setTimeout(() => { if (button.isConnected) button.textContent = 'Copy text'; }, 1800);
+                });
+                controls.append(spacer, button);
+            };
+
+            if (['unicode', 'ascii', 'compact', 'depth'].includes(mode)) {
+                let includeIcons = true;
+                addCheck('Show icons', true, (event) => {
+                    includeIcons = event.target.checked;
+                    renderText();
+                });
+                const pre = document.createElement('pre');
+                host.replaceChildren(pre);
+                const renderText = () => {
+                    const renderer = new ASCIIRenderer();
+                    const model = safeVisualizerTree();
+                    let output;
+                    if (mode === 'compact') output = renderer.renderCompact(model, { showIcon: includeIcons });
+                    else if (mode === 'depth') output = renderer.renderWithDepth(model, { showIcon: includeIcons });
+                    else output = renderer.render(model, { showIcon: includeIcons, useUnicode: mode === 'unicode' });
+                    pre.textContent = output;
+                };
+                addCopyButton(() => pre.textContent);
+                renderText();
+            } else {
+                if (mode === 'directory') {
+                    const expand = document.createElement('button');
+                    expand.type = 'button';
+                    expand.className = 'button';
+                    expand.textContent = 'Expand all';
+                    expand.addEventListener('click', () => directoryRenderer.expandAll(safeVisualizerTree().root));
+                    const collapse = document.createElement('button');
+                    collapse.type = 'button';
+                    collapse.className = 'button';
+                    collapse.textContent = 'Collapse all';
+                    collapse.addEventListener('click', () => directoryRenderer.collapseAll(safeVisualizerTree().root));
+                    controls.append(expand, collapse);
+                    const model = safeVisualizerTree();
+                    directoryRenderer = new DirectoryRenderer();
+                    directoryRenderer.render(model, host, { showIcon: true, showDescription: false, expandAll: true, onNodeClick: (node) => { selectedId = node.id; renderGraph(); } });
+                } else {
+                    const back = document.createElement('button');
+                    back.type = 'button';
+                    back.className = 'button';
+                    back.textContent = 'Back';
+                    back.addEventListener('click', () => drilldownRenderer.goBack());
+                    const home = document.createElement('button');
+                    home.type = 'button';
+                    home.className = 'button';
+                    home.textContent = 'Root';
+                    home.addEventListener('click', () => drilldownRenderer.goToRoot());
+                    controls.append(back, home);
+                    const model = safeVisualizerTree();
+                    drilldownRenderer = new DrillDownRenderer();
+                    drilldownRenderer.render(model, host, { showIcon: true, showDescription: false, showBreadcrumb: true, onNodeSelect: (node) => { selectedId = node.id; renderGraph(); } });
+                }
+            }
+        }
+
+        function refreshAfterEdit(forceCodeSync = false) {
+            renderGraph();
+            nodeCount();
+            syncCodeViews(forceCodeSync);
+            renderVisualizer();
+        }
+
+        function createNode(parent, title) {
+            const node = new TreeNode({ title, icon: '📄' });
+            parent.addChild(node);
+            selectedId = node.id;
+            refreshAfterEdit();
+            $('#node-title').focus();
+            $('#node-title').select();
+        }
+
+        function addSibling() {
+            const node = byId(selectedId);
+            if (!node?.parent) return;
+            const parent = node.parent;
+            const sibling = new TreeNode({ title: 'New node', icon: '📄' });
+            const index = parent.children.indexOf(node);
+            sibling.parent = parent;
+            parent.children.splice(index + 1, 0, sibling);
+            selectedId = sibling.id;
+            refreshAfterEdit();
+        }
+
+        function removeSelected() {
+            const node = byId(selectedId);
+            if (!node?.parent) return;
+            const parent = node.parent;
+            parent.removeChild(node.id);
+            selectedId = parent.id;
+            refreshAfterEdit();
+        }
+
+        function moveNode(sourceId, targetId, position) {
+            const source = byId(sourceId);
+            const target = byId(targetId);
+            if (!source || !target || source === tree.root || source === target || source.findById(target.id)) return;
+            if (position !== 'child' && target === tree.root) position = 'child';
+            const oldParent = source.parent;
+            if (!oldParent) return;
+            oldParent.removeChild(source.id);
+            if (position === 'child') {
+                target.addChild(source);
+            } else {
+                const newParent = target.parent;
+                if (!newParent) {
+                    oldParent.addChild(source);
+                    return;
+                }
+                const targetIndex = newParent.children.indexOf(target);
+                source.parent = newParent;
+                newParent.children.splice(targetIndex + (position === 'after' ? 1 : 0), 0, source);
+            }
+            selectedId = source.id;
+            refreshAfterEdit();
+        }
+
+        function showContextMenu(x, y, id) {
+            const menu = $('#context-menu');
+            contextNodeId = id;
+            menu.hidden = false;
+            menu.style.left = `${Math.min(x, window.innerWidth - menu.offsetWidth - 8)}px`;
+            menu.style.top = `${Math.min(y, window.innerHeight - menu.offsetHeight - 8)}px`;
+            menu.querySelector('[data-action="sibling"]').disabled = !byId(id)?.parent;
+            menu.querySelector('[data-action="delete"]').disabled = !byId(id)?.parent;
+        }
+
+        function hideContextMenu() { $('#context-menu').hidden = true; }
+
+        function validNodeData(data) {
+            if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Every node must be an object.');
+            if (data.title !== undefined && typeof data.title !== 'string') throw new Error('Node title must be text.');
+            if (data.icon !== undefined && typeof data.icon !== 'string') throw new Error('Node icon must be text.');
+            if (data.description !== undefined && typeof data.description !== 'string') throw new Error('Node description must be text.');
+            if (data.children !== undefined && !Array.isArray(data.children)) throw new Error('Node children must be an array.');
+            (data.children || []).forEach(validNodeData);
+        }
+
+        function toTree(result) {
+            if (result instanceof Tree) {
+                if (!result.root) throw new Error('The returned Tree has no root node.');
+                if (!(result.root instanceof TreeNode)) throw new Error('The returned Tree root must be a TreeNode.');
+                const rootData = result.root.toJSON();
+                validNodeData(rootData);
+                return Tree.fromJSON({ root: rootData });
+            }
+            if (result instanceof TreeNode) {
+                const rootData = result.toJSON();
+                validNodeData(rootData);
+                return Tree.fromJSON({ root: rootData });
+            }
+            if (!result || typeof result !== 'object') throw new Error('Return a Tree, TreeNode, or plain node object.');
+            const rootData = Object.hasOwn(result, 'root') ? result.root : result;
+            validNodeData(rootData);
+            const node = TreeNode.fromJSON(rootData);
+            return new Tree(node);
+        }
+
+        document.querySelectorAll('[data-mode]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('[data-mode]').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+                const mode = button.dataset.mode;
+                document.querySelectorAll('.editor-view').forEach((view) => { view.hidden = view.id !== `${mode}-view`; });
+                $('#graph-toolbar').hidden = mode !== 'graphical';
+            });
+        });
+
+        $('#icon-picker').innerHTML = `<option value="">Custom</option>${icons.map((icon) => `<option value="${icon}">${icon}</option>`).join('')}`;
+        $('#icon-picker').addEventListener('change', (event) => {
+            if (event.target.value) $('#node-icon').value = event.target.value;
+            $('#node-icon').dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        $('#node-form').addEventListener('submit', (event) => event.preventDefault());
+        $('#node-title').addEventListener('input', (event) => {
+            const node = byId(selectedId);
+            if (!node) return;
+            node.title = event.target.value;
+            renderGraph(false);
+            nodeCount();
+            syncCodeViews();
+            renderVisualizer();
+        });
+        $('#node-icon').addEventListener('input', (event) => {
+            const node = byId(selectedId);
+            if (!node) return;
+            node.icon = event.target.value || '📄';
+            renderGraph(false);
+            syncCodeViews();
+            renderVisualizer();
+        });
+        $('#node-description').addEventListener('input', (event) => {
+            const node = byId(selectedId);
+            if (!node) return;
+            node.description = event.target.value;
+            syncCodeViews();
+        });
+        $('#add-child').addEventListener('click', () => createNode(byId(selectedId), 'New node'));
+        $('#add-sibling').addEventListener('click', addSibling);
+        $('#delete-node').addEventListener('click', removeSelected);
+        $('#context-menu').addEventListener('click', (event) => {
+            const action = event.target.dataset.action;
+            const node = byId(contextNodeId);
+            hideContextMenu();
+            if (!node) return;
+            if (action === 'child') createNode(node, 'New node');
+            if (action === 'sibling' && node.parent) { selectedId = node.id; addSibling(); }
+            if (action === 'delete' && node.parent) { selectedId = node.id; removeSelected(); }
+        });
+        document.addEventListener('click', (event) => { if (!event.target.closest('.context-menu')) hideContextMenu(); });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape') hideContextMenu(); });
+
+        $('#json-editor').addEventListener('input', () => {
+            jsonDraftDirty = true;
+            setFeedback($('#json-feedback'), 'Draft not applied.');
+        });
+        $('#apply-json').addEventListener('click', () => {
+            try {
+                const data = JSON.parse($('#json-editor').value);
+                const rootData = Object.hasOwn(data, 'root') ? data.root : data;
+                validNodeData(rootData);
+                const updated = Tree.fromJSON({ root: rootData });
+                if (!updated.root) throw new Error('The tree needs a root node.');
+                tree = updated;
+                selectedId = tree.root.id;
+                jsonDraftDirty = false;
+                setFeedback($('#json-feedback'), 'Tree updated from JSON.', 'success');
+                refreshAfterEdit(true);
+            } catch (error) {
+                setFeedback($('#json-feedback'), error.message, 'error');
+            }
+        });
+        $('#javascript-editor').value = getJavascriptSource();
+        $('#javascript-editor').addEventListener('input', () => {
+            javascriptDraftDirty = true;
+            setFeedback($('#javascript-feedback'), 'Draft not run.');
+        });
+        $('#run-javascript').addEventListener('click', () => {
+            try {
+                const execute = new Function('Tree', 'TreeNode', $('#javascript-editor').value);
+                tree = toTree(execute(Tree, TreeNode));
+                selectedId = tree.root.id;
+                javascriptDraftDirty = false;
+                setFeedback($('#javascript-feedback'), 'Tree updated from JavaScript.', 'success');
+                refreshAfterEdit(true);
+            } catch (error) {
+                setFeedback($('#javascript-feedback'), error.message, 'error');
+            }
+        });
+        $('#visualizer-modes').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-visualizer]');
+            if (!button) return;
+            visualizerType = button.dataset.visualizer;
+            renderVisualizer();
+        });
+
+        renderGraph();
+        nodeCount();
+        syncCodeViews();
+        renderVisualizer();
+    </script>
+</body>
+</html>
