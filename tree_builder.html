@@ -173,6 +173,24 @@
         .tree-row.drop-before { box-shadow: inset 0 2px var(--coral); }
         .tree-row.drop-after { box-shadow: inset 0 -2px var(--coral); }
         .tree-row.drop-child { outline: 2px solid var(--coral); outline-offset: -2px; }
+        .node-toggle, .node-toggle-spacer {
+            display: grid;
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px;
+            place-items: center;
+        }
+        .node-toggle {
+            padding: 0;
+            border: 0;
+            border-radius: 3px;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .node-toggle:hover, .node-toggle:focus-visible { background: #e5eee8; color: var(--forest); }
         .node-icon { width: 21px; flex: 0 0 21px; text-align: center; font-size: 16px; }
         .node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
         .tree-hint { margin: 9px 1px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
@@ -300,6 +318,8 @@
                         <div id="graph-toolbar" class="toolbar">
                             <button class="button" type="button" id="add-child">+ Child</button>
                             <button class="button" type="button" id="add-sibling">+ Sibling</button>
+                            <button class="button" type="button" id="expand-all">Expand all</button>
+                            <button class="button" type="button" id="collapse-all">Collapse all</button>
                             <button class="button button-danger" type="button" id="delete-node">Delete</button>
                         </div>
                         <div class="tree-count" aria-live="polite"><strong id="node-count">0</strong><span>nodes</span></div>
@@ -309,7 +329,7 @@
                         <div class="graph-layout">
                             <div>
                                 <div class="tree-outline" id="tree-outline" aria-label="Editable tree"></div>
-                                <p class="tree-hint">Select to edit. Right-click for actions. Drag onto a node to nest, or near its top/bottom edge to reorder.</p>
+                                <p class="tree-hint">Select to edit. Right-click for actions. Drag onto a node to move it inside. Use the arrows to collapse or expand branches.</p>
                             </div>
                             <form class="properties" id="node-form" autocomplete="off">
                                 <h3>Selected node</h3>
@@ -378,6 +398,7 @@
         let tree = new Tree(root);
         let selectedId = root.id;
         let draggedId = null;
+        const collapsedIds = new Set();
         let contextNodeId = null;
         let jsonDraftDirty = false;
         let javascriptDraftDirty = false;
@@ -422,6 +443,24 @@
             return Tree.fromJSON({ root: scrub(json.root) });
         }
 
+        function expandAncestors(node) {
+            let ancestor = node.parent;
+            while (ancestor) {
+                collapsedIds.delete(ancestor.id);
+                ancestor = ancestor.parent;
+            }
+        }
+
+        function setAllCollapsed(collapsed) {
+            collapsedIds.clear();
+            if (collapsed) {
+                tree.traversePreOrder((node) => {
+                    if (node.children.length) collapsedIds.add(node.id);
+                });
+            }
+            renderGraph();
+        }
+
         function renderGraph(updateForm = true) {
             const host = $('#tree-outline');
             const list = document.createElement('ul');
@@ -432,6 +471,26 @@
                 row.className = `tree-row${node.id === selectedId ? ' selected' : ''}`;
                 row.dataset.nodeId = node.id;
                 row.draggable = node !== tree.root;
+                if (node.children.length) {
+                    const toggle = document.createElement('button');
+                    const isCollapsed = collapsedIds.has(node.id);
+                    toggle.type = 'button';
+                    toggle.className = 'node-toggle';
+                    toggle.textContent = isCollapsed ? '▸' : '▾';
+                    toggle.setAttribute('aria-label', `${isCollapsed ? 'Expand' : 'Collapse'} ${node.title}`);
+                    toggle.setAttribute('aria-expanded', String(!isCollapsed));
+                    toggle.addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        if (isCollapsed) collapsedIds.delete(node.id);
+                        else collapsedIds.add(node.id);
+                        renderGraph();
+                    });
+                    row.appendChild(toggle);
+                } else {
+                    const spacer = document.createElement('span');
+                    spacer.className = 'node-toggle-spacer';
+                    row.appendChild(spacer);
+                }
                 const icon = document.createElement('span');
                 icon.className = 'node-icon';
                 icon.textContent = node.icon;
@@ -456,13 +515,11 @@
                     document.querySelectorAll('.tree-row').forEach((element) => element.classList.remove('dragging', 'drop-before', 'drop-after', 'drop-child'));
                 });
                 row.addEventListener('dragover', (event) => {
-                    if (!draggedId || draggedId === node.id) return;
+                    const source = byId(draggedId);
+                    if (!source || source === tree.root || source === node || source.findById(node.id)) return;
                     event.preventDefault();
-                    const rect = row.getBoundingClientRect();
-                    const ratio = (event.clientY - rect.top) / rect.height;
-                    const position = node === tree.root || (ratio >= .27 && ratio <= .73) ? 'child' : ratio < .5 ? 'before' : 'after';
-                    row.classList.remove('drop-before', 'drop-after', 'drop-child');
-                    row.classList.add(`drop-${position}`);
+                    row.classList.remove('drop-before', 'drop-after');
+                    row.classList.add('drop-child');
                     event.dataTransfer.dropEffect = 'move';
                 });
                 row.addEventListener('dragleave', (event) => {
@@ -470,15 +527,13 @@
                 });
                 row.addEventListener('drop', (event) => {
                     event.preventDefault();
-                    const rect = row.getBoundingClientRect();
-                    const ratio = (event.clientY - rect.top) / rect.height;
-                    const position = node === tree.root || (ratio >= .27 && ratio <= .73) ? 'child' : ratio < .5 ? 'before' : 'after';
-                    moveNode(event.dataTransfer.getData('text/plain') || draggedId, node.id, position);
+                    moveNode(event.dataTransfer.getData('text/plain') || draggedId, node.id);
                 });
                 item.appendChild(row);
                 if (node.children.length) {
                     const children = document.createElement('ul');
                     node.children.forEach((child) => append(child, children));
+                    children.hidden = collapsedIds.has(node.id);
                     item.appendChild(children);
                 }
                 parentList.appendChild(item);
@@ -500,7 +555,9 @@
         }
 
         function selectNode(id) {
-            if (!byId(id)) return;
+            const node = byId(id);
+            if (!node) return;
+            expandAncestors(node);
             selectedId = id;
             renderGraph();
             hideContextMenu();
@@ -619,6 +676,7 @@
 
         function createNode(parent, title) {
             const node = new TreeNode({ title, icon: '📄' });
+            collapsedIds.delete(parent.id);
             parent.addChild(node);
             selectedId = node.id;
             refreshAfterEdit();
@@ -647,26 +705,16 @@
             refreshAfterEdit();
         }
 
-        function moveNode(sourceId, targetId, position) {
+        function moveNode(sourceId, targetId) {
             const source = byId(sourceId);
             const target = byId(targetId);
             if (!source || !target || source === tree.root || source === target || source.findById(target.id)) return;
-            if (position !== 'child' && target === tree.root) position = 'child';
             const oldParent = source.parent;
             if (!oldParent) return;
             oldParent.removeChild(source.id);
-            if (position === 'child') {
-                target.addChild(source);
-            } else {
-                const newParent = target.parent;
-                if (!newParent) {
-                    oldParent.addChild(source);
-                    return;
-                }
-                const targetIndex = newParent.children.indexOf(target);
-                source.parent = newParent;
-                newParent.children.splice(targetIndex + (position === 'after' ? 1 : 0), 0, source);
-            }
+            collapsedIds.delete(target.id);
+            expandAncestors(target);
+            target.addChild(source);
             selectedId = source.id;
             refreshAfterEdit();
         }
@@ -752,6 +800,8 @@
         });
         $('#add-child').addEventListener('click', () => createNode(byId(selectedId), 'New node'));
         $('#add-sibling').addEventListener('click', addSibling);
+        $('#expand-all').addEventListener('click', () => setAllCollapsed(false));
+        $('#collapse-all').addEventListener('click', () => setAllCollapsed(true));
         $('#delete-node').addEventListener('click', removeSelected);
         $('#context-menu').addEventListener('click', (event) => {
             const action = event.target.dataset.action;
@@ -777,6 +827,7 @@
                 const updated = Tree.fromJSON({ root: rootData });
                 if (!updated.root) throw new Error('The tree needs a root node.');
                 tree = updated;
+                collapsedIds.clear();
                 selectedId = tree.root.id;
                 jsonDraftDirty = false;
                 setFeedback($('#json-feedback'), 'Tree updated from JSON.', 'success');
@@ -794,6 +845,7 @@
             try {
                 const execute = new Function('Tree', 'TreeNode', $('#javascript-editor').value);
                 tree = toTree(execute(Tree, TreeNode));
+                collapsedIds.clear();
                 selectedId = tree.root.id;
                 javascriptDraftDirty = false;
                 setFeedback($('#javascript-feedback'), 'Tree updated from JavaScript.', 'success');
