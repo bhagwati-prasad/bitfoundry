@@ -1,6 +1,8 @@
 /**
  * DrillDownRenderer - Renders tree in drill-down mode (shows root, then expands on double-click)
  */
+import { createCodicon } from './codicon.js';
+
 export class DrillDownRenderer {
     constructor() {
         this.currentNodes = [];
@@ -77,10 +79,13 @@ export class DrillDownRenderer {
             const currentParent = this.history[this.history.length - 1];
             const levelTitle = document.createElement('div');
             levelTitle.className = 'drilldown-level-title';
-            levelTitle.innerHTML = `
-                <span class="level-icon">${this.showIcon ? currentParent.icon : ''}</span>
-                <span class="level-text">${currentParent.title}</span>
-            `;
+            const levelIcon = document.createElement('span');
+            levelIcon.className = 'level-icon';
+            if (this.showIcon) levelIcon.appendChild(createCodicon(currentParent.icon));
+            const levelText = document.createElement('span');
+            levelText.className = 'level-text';
+            levelText.textContent = currentParent.title;
+            levelTitle.append(levelIcon, levelText);
             container.appendChild(levelTitle);
         }
         
@@ -108,7 +113,7 @@ export class DrillDownRenderer {
         // Home button
         const home = document.createElement('span');
         home.className = 'breadcrumb-item';
-        home.textContent = '🏠 Root';
+        home.append(createCodicon('home'), document.createTextNode(' Root'));
         home.onclick = () => this.goToRoot();
         breadcrumb.appendChild(home);
         
@@ -116,13 +121,13 @@ export class DrillDownRenderer {
         this.history.forEach((node, index) => {
             const separator = document.createElement('span');
             separator.className = 'breadcrumb-separator';
-            separator.textContent = ' › ';
+            separator.appendChild(createCodicon('chevron-right'));
             breadcrumb.appendChild(separator);
             
             const item = document.createElement('span');
             item.className = 'breadcrumb-item';
-            const icon = this.showIcon ? `${node.icon} ` : '';
-            item.textContent = `${icon}${node.title}`;
+            if (this.showIcon) item.appendChild(createCodicon(node.icon));
+            item.append(document.createTextNode(` ${node.title}`));
             
             // Don't make the last item clickable (it's the current level)
             if (index < this.history.length - 1) {
@@ -150,7 +155,7 @@ export class DrillDownRenderer {
         if (this.showIcon) {
             const iconDiv = document.createElement('div');
             iconDiv.className = 'node-icon';
-            iconDiv.textContent = node.icon;
+            iconDiv.appendChild(createCodicon(node.icon));
             card.appendChild(iconDiv);
         }
         
@@ -176,10 +181,13 @@ export class DrillDownRenderer {
         if (node.children.length > 0) {
             const indicator = document.createElement('div');
             indicator.className = 'node-indicator';
-            indicator.innerHTML = `
-                <span class="child-count">${node.children.length}</span>
-                <span class="arrow">›</span>
-            `;
+            const childCount = document.createElement('span');
+            childCount.className = 'child-count';
+            childCount.textContent = node.children.length;
+            const arrow = document.createElement('span');
+            arrow.className = 'arrow';
+            arrow.appendChild(createCodicon('chevron-right'));
+            indicator.append(childCount, arrow);
             card.appendChild(indicator);
         }
         
@@ -304,7 +312,7 @@ export class DrillDownRenderer {
                     font-size: 14px;
                 }
                 
-                .drilldown-breadcrumb {
+                .drilldown-tree .drilldown-breadcrumb {
                     padding: 12px 16px;
                     background: #f8f9fa;
                     border-bottom: 1px solid #dee2e6;
@@ -314,7 +322,7 @@ export class DrillDownRenderer {
                     gap: 4px;
                 }
                 
-                .breadcrumb-item {
+                .drilldown-tree .breadcrumb-item {
                     cursor: pointer;
                     color: #007bff;
                     padding: 4px 8px;
@@ -322,29 +330,33 @@ export class DrillDownRenderer {
                     transition: background-color 0.2s;
                 }
                 
-                .breadcrumb-item:hover {
+                .drilldown-tree .breadcrumb-item:hover {
                     background-color: #e9ecef;
                 }
                 
-                .breadcrumb-item.active {
+                .drilldown-tree .breadcrumb-item.active {
                     color: #495057;
                     cursor: default;
                     font-weight: 500;
                 }
                 
-                .breadcrumb-item.active:hover {
+                .drilldown-tree .breadcrumb-item.active:hover {
                     background-color: transparent;
                 }
                 
-                .breadcrumb-separator {
+                .drilldown-tree .breadcrumb-separator {
                     color: #6c757d;
                 }
+
+                .drilldown-tree .breadcrumb-separator .codicon {
+                    font-size: 12px;
+                }
                 
-                .drilldown-container {
+                .drilldown-tree .drilldown-container {
                     padding: 16px;
                 }
                 
-                .drilldown-level-title {
+                .drilldown-tree .drilldown-level-title {
                     display: flex;
                     align-items: center;
                     gap: 8px;
@@ -354,17 +366,17 @@ export class DrillDownRenderer {
                     color: #212529;
                 }
                 
-                .level-icon {
+                .drilldown-tree .level-icon {
                     font-size: 24px;
                 }
                 
-                .drilldown-node-list {
+                .drilldown-tree .drilldown-node-list {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
                     gap: 12px;
                 }
                 
-                .drilldown-node-card {
+                .drilldown-tree .drilldown-node-card {
                     display: flex;
                     align-items: center;
                     gap: 12px;
@@ -376,28 +388,28 @@ export class DrillDownRenderer {
                     background: white;
                 }
                 
-                .drilldown-node-card:hover {
+                .drilldown-tree .drilldown-node-card:hover {
                     border-color: #007bff;
                     box-shadow: 0 2px 8px rgba(0,123,255,0.1);
                     transform: translateY(-2px);
                 }
                 
-                .drilldown-node-card.selected {
+                .drilldown-tree .drilldown-node-card.selected {
                     border-color: #007bff;
                     background-color: #e7f3ff;
                 }
                 
-                .node-icon {
+                .drilldown-tree .node-icon {
                     font-size: 32px;
                     flex-shrink: 0;
                 }
                 
-                .node-content {
+                .drilldown-tree .node-content {
                     flex: 1;
                     min-width: 0;
                 }
                 
-                .node-title {
+                .drilldown-tree .node-title {
                     font-weight: 500;
                     color: #212529;
                     margin-bottom: 4px;
@@ -406,7 +418,7 @@ export class DrillDownRenderer {
                     white-space: nowrap;
                 }
                 
-                .node-description {
+                .drilldown-tree .node-description {
                     font-size: 12px;
                     color: #6c757d;
                     overflow: hidden;
@@ -416,7 +428,7 @@ export class DrillDownRenderer {
                     -webkit-box-orient: vertical;
                 }
                 
-                .node-indicator {
+                .drilldown-tree .node-indicator {
                     display: flex;
                     align-items: center;
                     gap: 4px;
@@ -424,7 +436,7 @@ export class DrillDownRenderer {
                     flex-shrink: 0;
                 }
                 
-                .child-count {
+                .drilldown-tree .child-count {
                     background: #e9ecef;
                     padding: 2px 8px;
                     border-radius: 12px;
@@ -432,12 +444,12 @@ export class DrillDownRenderer {
                     font-weight: 500;
                 }
                 
-                .arrow {
+                .drilldown-tree .arrow {
                     font-size: 20px;
                     font-weight: bold;
                 }
                 
-                .drilldown-empty {
+                .drilldown-tree .drilldown-empty {
                     padding: 40px;
                     text-align: center;
                     color: #999;

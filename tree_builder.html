@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tree Builder | Bitfoundry</title>
+    <link rel="stylesheet" href="./codicon.css">
     <style>
         :root {
             color-scheme: light;
@@ -109,7 +110,7 @@
             border-radius: 4px;
             background: #f3f5ef;
         }
-        .segmented button {
+        .segmented > button {
             min-height: 34px;
             padding: 0 11px;
             border: 0;
@@ -120,7 +121,7 @@
             font-size: 12px;
             font-weight: 700;
         }
-        .segmented button[aria-pressed="true"] { background: var(--forest); color: white; }
+        .segmented > button[aria-pressed="true"] { background: var(--forest); color: white; }
 
         .builder-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
         .button {
@@ -143,7 +144,7 @@
 
         .editor-view[hidden] { display: none; }
         #graphical-view { min-height: 0; flex: 1; }
-        #javascript-view:not([hidden]), #json-view:not([hidden]) { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+        #javascript-view:not([hidden]), #json-view:not([hidden]), #tree-view:not([hidden]) { display: flex; min-height: 0; flex: 1; flex-direction: column; }
         .graph-layout { display: grid; height: 100%; min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(190px, .78fr); gap: 12px; }
         .tree-outline, .properties {
             min-width: 0;
@@ -190,6 +191,7 @@
             font-size: 12px;
             line-height: 1;
         }
+        .node-toggle .codicon { font-size: 12px; }
         .node-toggle:hover, .node-toggle:focus-visible { background: #e5eee8; color: var(--forest); }
         .node-icon { width: 21px; flex: 0 0 21px; text-align: center; font-size: 16px; }
         .node-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
@@ -210,9 +212,20 @@
         .field input, .field select { min-height: 35px; padding: 6px 8px; }
         .field textarea { min-height: 75px; resize: vertical; padding: 8px; }
         .field input:focus, .field textarea:focus, .field select:focus, .code-editor:focus { border-color: #6c9a83; box-shadow: 0 0 0 2px rgba(35, 75, 64, .1); }
-        .icon-entry { display: grid; grid-template-columns: 1fr 43px; gap: 6px; }
-        .icon-entry select { min-width: 0; }
-        .icon-entry input { text-align: center; font-size: 17px; }
+        .icon-entry { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .icon-picker-button { display: flex; align-items: center; gap: 8px; text-align: left; }
+        .icon-picker-button .codicon { font-size: 18px; }
+        .icon-picker-button span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .icon-picker-dialog { width: min(720px, calc(100vw - 32px)); max-height: min(680px, calc(100vh - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--panel); box-shadow: var(--shadow); }
+        .icon-picker-dialog::backdrop { background: rgba(18, 28, 24, .48); }
+        .icon-picker-header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+        .icon-picker-header h2 { margin: 0; font-size: 20px; }
+        .icon-picker-search { width: calc(100% - 32px); margin: 16px 16px 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 3px; }
+        .icon-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; max-height: 440px; overflow: auto; padding: 4px 16px 16px; }
+        .icon-option { display: grid; min-height: 72px; align-content: center; justify-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 4px; background: white; cursor: pointer; color: var(--muted); font-size: 10px; overflow: hidden; }
+        .icon-option:hover, .icon-option:focus-visible { border-color: var(--forest); background: var(--forest-soft); color: var(--forest); }
+        .icon-option .codicon { font-size: 20px; }
+        .icon-option span:last-child { max-width: 100%; overflow: hidden; padding: 0 4px; text-overflow: ellipsis; white-space: nowrap; }
         .node-actions { margin-top: 15px; }
 
         .code-notice, .feedback {
@@ -250,6 +263,7 @@
         .visual-controls .spacer { flex: 1; }
         .visual-stage { min-height: 0; flex: 1; overflow: auto; padding: 14px; background: linear-gradient(135deg, rgba(35, 75, 64, .025), transparent 48%), #fcfcf8; }
         .visual-stage pre { min-width: max-content; margin: 0; color: var(--ink); font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        .visual-stage pre .text-node-icon { font-size: 13px; vertical-align: -1px; }
         .visual-stage .directory-tree, .visual-stage .drilldown-tree { font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
         .visual-stage .directory-tree .tree-node-header:hover { background: #edf2ec; }
         .visual-stage .drilldown-breadcrumb { background: #f1f4ee; }
@@ -258,6 +272,8 @@
         .visual-stage .drilldown-node-card { border-radius: 4px; }
         .visual-stage .drilldown-node-card:hover { border-color: #88a797; box-shadow: 0 3px 10px rgba(35, 75, 64, .1); }
         .visual-stage .drilldown-node-card.selected { border-color: var(--forest); background: var(--forest-soft); }
+        .visual-stage .drilldown-level-title .codicon { font-size: 24px; }
+        .visual-stage .drilldown-node-card .node-icon .codicon { font-size: 32px; }
         .visual-stage .node-description { color: var(--muted); }
         .visual-stage .breadcrumb-item.active { color: var(--ink); }
 
@@ -295,7 +311,7 @@
             .properties { min-height: 0; }
             .builder-tools { align-items: start; flex-direction: column; }
             .segmented { width: 100%; }
-            .segmented button { flex: 1; padding-inline: 7px; }
+            .segmented > button { flex: 1; padding-inline: 7px; }
             .visual-stage { min-height: 280px; padding: 10px; }
             .code-editor { min-height: 300px; }
         }
@@ -314,10 +330,11 @@
                             <button type="button" data-mode="graphical" aria-pressed="true">Graphical</button>
                             <button type="button" data-mode="javascript" aria-pressed="false">JavaScript</button>
                             <button type="button" data-mode="json" aria-pressed="false">JSON</button>
+                            <button type="button" data-mode="tree" aria-pressed="false">Tree</button>
                         </div>
                         <div id="graph-toolbar" class="toolbar">
-                            <button class="button" type="button" id="add-child">+ Child</button>
-                            <button class="button" type="button" id="add-sibling">+ Sibling</button>
+                            <button class="button" type="button" id="add-child"><span class="codicon codicon-add" aria-hidden="true"></span> Child</button>
+                            <button class="button" type="button" id="add-sibling"><span class="codicon codicon-add" aria-hidden="true"></span> Sibling</button>
                             <button class="button" type="button" id="expand-all">Expand all</button>
                             <button class="button" type="button" id="collapse-all">Collapse all</button>
                             <button class="button button-danger" type="button" id="delete-node">Delete</button>
@@ -334,7 +351,7 @@
                             <form class="properties" id="node-form" autocomplete="off">
                                 <h3>Selected node</h3>
                                 <div class="field"><label for="node-title">Name</label><input id="node-title" type="text" maxlength="120" required></div>
-                                <div class="field"><label for="node-icon">Icon</label><div class="icon-entry"><select id="icon-picker" aria-label="Choose an icon"></select><input id="node-icon" type="text" maxlength="8" aria-label="Custom icon"></div></div>
+                                <div class="field"><label>Icon</label><div class="icon-entry"><button class="button icon-picker-button" id="icon-picker" type="button" aria-haspopup="dialog" aria-controls="icon-picker-dialog"><span id="selected-icon-preview" class="codicon codicon-file" aria-hidden="true"></span><span id="selected-icon-name">file</span></button><input id="node-icon" type="hidden" value="file"></div></div>
                                 <div class="field"><label for="node-description">Description</label><textarea id="node-description" maxlength="500"></textarea></div>
                             </form>
                         </div>
@@ -350,6 +367,12 @@
                         <p class="code-notice">Edit the tree JSON, then apply it to the visualizer. The current tree stays intact if the document is invalid.</p>
                         <textarea class="code-editor" id="json-editor" spellcheck="false" aria-label="Tree JSON"></textarea>
                         <div class="editor-actions"><p class="feedback" id="json-feedback" aria-live="polite"></p><button class="button button-primary" type="button" id="apply-json">Apply JSON</button></div>
+                    </div>
+
+                    <div class="editor-view" id="tree-view" hidden>
+                        <p class="code-notice">Paste an ASCII or Unicode tree outline to generate the tree and update the Graphical, JavaScript, and JSON editors.</p>
+                        <textarea class="code-editor" id="text-tree-editor" spellcheck="false" aria-label="ASCII or Unicode tree outline" placeholder="Root&#10;├── Child&#10;│   └── Grandchild"></textarea>
+                        <div class="editor-actions"><p class="feedback" id="text-tree-feedback" aria-live="polite"></p><button class="button button-primary" id="generate-text-tree" type="button">Generate tree</button></div>
                     </div>
                 </div>
             </section>
@@ -376,18 +399,27 @@
         <button type="button" data-action="sibling" role="menuitem">Add sibling</button>
         <button type="button" data-action="delete" role="menuitem">Delete node</button>
     </div>
+    <dialog class="icon-picker-dialog" id="icon-picker-dialog" aria-labelledby="icon-picker-title">
+        <div class="icon-picker-header">
+            <h2 id="icon-picker-title">Choose an icon</h2>
+            <button class="button" id="close-icon-picker" type="button" aria-label="Close icon picker">Close</button>
+        </div>
+        <input class="icon-picker-search" id="icon-picker-search" type="search" placeholder="Search icons" aria-label="Search icons">
+        <div class="icon-picker-grid" id="icon-picker-grid" role="listbox" aria-label="Available icons"></div>
+    </dialog>
 
     <script type="module">
         import { Tree, TreeNode, ASCIIRenderer, DirectoryRenderer, DrillDownRenderer } from './js/tree/index.js';
+        import { createCodicon, normalizeCodiconName } from './js/tree/codicon.js';
+    import { parseTreeText } from './js/tree/text_tree_parser.js';
 
-        const icons = ['📁', '📄', '📝', '📊', '🖼️', '🎵', '💻', '🌳', '🚀', '📦', '🔧', '⭐', '💡', '🔒', '🌐', '📱'];
-        const root = new TreeNode({ title: 'My workspace', description: 'A sample project tree', icon: '🌳' });
-        const product = new TreeNode({ title: 'Product', description: 'Product planning and design', icon: '📁' });
-        const research = new TreeNode({ title: 'Research', description: 'Customer interviews and notes', icon: '📝' });
-        const design = new TreeNode({ title: 'Design system', description: 'Shared interface patterns', icon: '🎨' });
-        const engineering = new TreeNode({ title: 'Engineering', description: 'Implementation and delivery', icon: '📁' });
-        const roadmap = new TreeNode({ title: 'Roadmap.md', description: 'Upcoming milestones', icon: '📄' });
-        const prototype = new TreeNode({ title: 'Prototype', description: 'Early interaction model', icon: '🚀' });
+        const root = new TreeNode({ title: 'My workspace', description: 'A sample project tree', icon: 'tree' });
+        const product = new TreeNode({ title: 'Product', description: 'Product planning and design', icon: 'folder' });
+        const research = new TreeNode({ title: 'Research', description: 'Customer interviews and notes', icon: 'note' });
+        const design = new TreeNode({ title: 'Design system', description: 'Shared interface patterns', icon: 'color-mode' });
+        const engineering = new TreeNode({ title: 'Engineering', description: 'Implementation and delivery', icon: 'folder' });
+        const roadmap = new TreeNode({ title: 'Roadmap.md', description: 'Upcoming milestones', icon: 'file' });
+        const prototype = new TreeNode({ title: 'Prototype', description: 'Early interaction model', icon: 'rocket' });
         product.addChild(research);
         product.addChild(design);
         engineering.addChild(roadmap);
@@ -435,7 +467,7 @@
             const json = tree.toJSON();
             const scrub = (node) => {
                 node.title = String(node.title ?? 'Untitled');
-                node.icon = String(node.icon ?? '📄');
+                node.icon = normalizeCodiconName(node.icon ?? 'file');
                 node.description = String(node.description ?? '');
                 node.children = Array.isArray(node.children) ? node.children.map(scrub) : [];
                 return node;
@@ -476,7 +508,7 @@
                     const isCollapsed = collapsedIds.has(node.id);
                     toggle.type = 'button';
                     toggle.className = 'node-toggle';
-                    toggle.textContent = isCollapsed ? '▸' : '▾';
+                    toggle.replaceChildren(createCodicon(isCollapsed ? 'chevron-right' : 'chevron-down'));
                     toggle.setAttribute('aria-label', `${isCollapsed ? 'Expand' : 'Collapse'} ${node.title}`);
                     toggle.setAttribute('aria-expanded', String(!isCollapsed));
                     toggle.addEventListener('click', (event) => {
@@ -493,7 +525,7 @@
                 }
                 const icon = document.createElement('span');
                 icon.className = 'node-icon';
-                icon.textContent = node.icon;
+                icon.replaceChildren(createCodicon(node.icon));
                 const title = document.createElement('span');
                 title.className = 'node-label';
                 title.textContent = node.title;
@@ -547,11 +579,18 @@
             const node = byId(selectedId) || tree.root;
             selectedId = node.id;
             $('#node-title').value = node.title;
-            $('#node-icon').value = node.icon;
+            $('#node-icon').value = normalizeCodiconName(node.icon);
             $('#node-description').value = node.description;
-            $('#icon-picker').value = icons.includes(node.icon) ? node.icon : '';
+            updateIconPicker(node.icon);
             $('#delete-node').disabled = node === tree.root;
             $('#add-sibling').disabled = node === tree.root;
+        }
+
+        function updateIconPicker(iconName) {
+            const normalized = normalizeCodiconName(iconName);
+            $('#node-icon').value = normalized;
+            $('#selected-icon-preview').className = `codicon codicon-${normalized}`;
+            $('#selected-icon-name').textContent = normalized;
         }
 
         function selectNode(id) {
@@ -629,13 +668,71 @@
                 const renderText = () => {
                     const renderer = new ASCIIRenderer();
                     const model = safeVisualizerTree();
-                    let output;
-                    if (mode === 'compact') output = renderer.renderCompact(model, { showIcon: includeIcons, showDescription: includeDescriptions });
-                    else if (mode === 'depth') output = renderer.renderWithDepth(model, { showIcon: includeIcons, showDescription: includeDescriptions });
-                    else output = renderer.render(model, { showIcon: includeIcons, showDescription: includeDescriptions, useUnicode: mode === 'unicode' });
-                    pre.textContent = output;
+                    pre.replaceChildren();
+                    const appendIcon = (line, node) => {
+                        if (includeIcons) line.append(createCodicon(node.icon, 'text-node-icon'), document.createTextNode(' '));
+                    };
+                    const appendDescription = (line, node) => {
+                        if (includeDescriptions && node.description) line.append(document.createTextNode(` — ${node.description}`));
+                    };
+                    const appendOutline = (node, prefix, isLast) => {
+                        const line = document.createElement('div');
+                        if (prefix) line.append(document.createTextNode(prefix));
+                        if (prefix) {
+                            const chars = renderer.getCharSet();
+                            line.append(document.createTextNode(`${isLast ? chars.lastBranch : chars.branch}${chars.horizontal}${chars.horizontal}${chars.space}`));
+                        }
+                        appendIcon(line, node);
+                        line.append(document.createTextNode(node.title));
+                        appendDescription(line, node);
+                        pre.appendChild(line);
+                        const children = node.children;
+                        children.forEach((child, index) => {
+                            let childPrefix = prefix;
+                            if (prefix || children.length > 0) {
+                                childPrefix += isLast ? '    ' : `${renderer.getCharSet().vertical}   `;
+                            }
+                            appendOutline(child, childPrefix, index === children.length - 1);
+                        });
+                    };
+                    const appendCompact = (node, line) => {
+                        appendIcon(line, node);
+                        line.append(document.createTextNode(node.title));
+                        appendDescription(line, node);
+                        if (node.children.length) {
+                            line.append(document.createTextNode(' ['));
+                            node.children.forEach((child, index) => {
+                                if (index) line.append(document.createTextNode(', '));
+                                appendCompact(child, line);
+                            });
+                            line.append(document.createTextNode(']'));
+                        }
+                    };
+                    renderer.useUnicode = mode !== 'ascii';
+                    if (mode === 'compact') {
+                        const line = document.createElement('div');
+                        appendCompact(model.root, line);
+                        pre.appendChild(line);
+                    } else if (mode === 'depth') {
+                        const appendDepth = (node, depth) => {
+                            const line = document.createElement('div');
+                            line.append(document.createTextNode(`${'  '.repeat(depth)}[${depth}] `));
+                            appendIcon(line, node);
+                            line.append(document.createTextNode(node.title));
+                            appendDescription(line, node);
+                            pre.appendChild(line);
+                            node.children.forEach((child) => appendDepth(child, depth + 1));
+                        };
+                        appendDepth(model.root, 0);
+                    } else {
+                        appendOutline(model.root, '', true);
+                    }
                 };
-                addCopyButton(() => pre.textContent);
+                addCopyButton(() => {
+                    const copy = pre.cloneNode(true);
+                    copy.querySelectorAll('.codicon').forEach((icon) => icon.replaceWith(`[${icon.dataset.codicon}]`));
+                    return Array.from(copy.children, (line) => line.textContent).join('\n');
+                });
                 renderText();
             } else {
                 if (mode === 'directory') {
@@ -680,7 +777,7 @@
         }
 
         function createNode(parent, title) {
-            const node = new TreeNode({ title, icon: '📄' });
+            const node = new TreeNode({ title, icon: 'file' });
             collapsedIds.delete(parent.id);
             parent.addChild(node);
             selectedId = node.id;
@@ -693,7 +790,7 @@
             const node = byId(selectedId);
             if (!node?.parent) return;
             const parent = node.parent;
-            const sibling = new TreeNode({ title: 'New node', icon: '📄' });
+            const sibling = new TreeNode({ title: 'New node', icon: 'file' });
             const index = parent.children.indexOf(node);
             sibling.parent = parent;
             parent.children.splice(index + 1, 0, sibling);
@@ -774,11 +871,50 @@
             });
         });
 
-        $('#icon-picker').innerHTML = `<option value="">Custom</option>${icons.map((icon) => `<option value="${icon}">${icon}</option>`).join('')}`;
-        $('#icon-picker').addEventListener('change', (event) => {
-            if (event.target.value) $('#node-icon').value = event.target.value;
-            $('#node-icon').dispatchEvent(new Event('input', { bubbles: true }));
+        function readCodiconNames() {
+            const stylesheet = Array.from(document.styleSheets).find((sheet) => sheet.href?.endsWith('/codicon.css'));
+            if (!stylesheet) throw new Error('Could not load codicon.css.');
+            return Array.from(stylesheet.cssRules)
+                .flatMap((rule) => Array.from(rule.selectorText?.matchAll(/\.codicon-([a-z0-9-]+):before/g) || [], (match) => match[1]))
+                .filter((name, index, names) => names.indexOf(name) === index)
+                .sort((a, b) => a.localeCompare(b));
+        }
+        const iconPickerDialog = $('#icon-picker-dialog');
+        const iconPickerGrid = $('#icon-picker-grid');
+        const iconPickerSearch = $('#icon-picker-search');
+        const codiconNames = readCodiconNames();
+        function renderIconOptions(query = '') {
+            const normalizedQuery = query.trim().toLowerCase();
+            const matchingNames = codiconNames.filter((name) => name.includes(normalizedQuery));
+            iconPickerGrid.replaceChildren(...matchingNames.map((name) => {
+                const option = document.createElement('button');
+                option.className = 'icon-option';
+                option.type = 'button';
+                option.setAttribute('role', 'option');
+                option.setAttribute('aria-label', name);
+                option.title = name;
+                option.append(createCodicon(name));
+                const label = document.createElement('span');
+                label.textContent = name;
+                option.append(label);
+                option.addEventListener('click', () => {
+                    updateIconPicker(name);
+                    $('#node-icon').dispatchEvent(new Event('input', { bubbles: true }));
+                    iconPickerDialog.close();
+                    $('#icon-picker').focus();
+                });
+                return option;
+            }));
+        }
+        renderIconOptions();
+        $('#icon-picker').addEventListener('click', () => {
+            iconPickerSearch.value = '';
+            renderIconOptions();
+            iconPickerDialog.showModal();
+            iconPickerSearch.focus();
         });
+        iconPickerSearch.addEventListener('input', () => renderIconOptions(iconPickerSearch.value));
+        $('#close-icon-picker').addEventListener('click', () => iconPickerDialog.close());
         $('#node-form').addEventListener('submit', (event) => event.preventDefault());
         $('#node-title').addEventListener('input', (event) => {
             const node = byId(selectedId);
@@ -792,7 +928,8 @@
         $('#node-icon').addEventListener('input', (event) => {
             const node = byId(selectedId);
             if (!node) return;
-            node.icon = event.target.value || '📄';
+            node.icon = normalizeCodiconName(event.target.value || 'file');
+            updateIconPicker(node.icon);
             renderGraph(false);
             syncCodeViews();
             renderVisualizer();
@@ -803,6 +940,21 @@
             node.description = event.target.value;
             syncCodeViews();
             renderVisualizer();
+        });
+        $('#generate-text-tree').addEventListener('click', () => {
+            try {
+                const rootData = parseTreeText($('#text-tree-editor').value);
+                validNodeData(rootData);
+                tree = new Tree(TreeNode.fromJSON(rootData));
+                collapsedIds.clear();
+                selectedId = tree.root.id;
+                jsonDraftDirty = false;
+                javascriptDraftDirty = false;
+                refreshAfterEdit(true);
+                setFeedback($('#text-tree-feedback'), 'Tree generated. Graphical, JavaScript, and JSON views are updated.', 'success');
+            } catch (error) {
+                setFeedback($('#text-tree-feedback'), error.message, 'error');
+            }
         });
         $('#add-child').addEventListener('click', () => createNode(byId(selectedId), 'New node'));
         $('#add-sibling').addEventListener('click', addSibling);

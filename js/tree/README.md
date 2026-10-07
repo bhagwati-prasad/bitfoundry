@@ -17,6 +17,8 @@ A comprehensive JavaScript tree data structure module with three different visua
 
 No installation required - pure JavaScript ES6 modules.
 
+In `tree_builder.html`, select **Tree** in the builder tools to paste an ASCII or Unicode outline and generate the tree model. Use **Copy text** on the rendered view to copy an outline with Codicon names; generating it updates the Graphical, JavaScript, and JSON editors. Standard `├──` / `└──` Unicode and `|--` / `+--` / `\--` ASCII branches are supported.
+
 ## Quick Start
 
 ```javascript
@@ -26,13 +28,13 @@ import { Tree, TreeNode, ASCIIRenderer } from './js/tree/index.js';
 const root = new TreeNode({
     title: 'Root',
     description: 'Root node',
-    icon: '🌳'
+    icon: 'type-hierarchy'
 });
 
 const child = new TreeNode({
     title: 'Child',
     description: 'Child node',
-    icon: '📁'
+    icon: 'folder'
 });
 
 root.addChild(child);
@@ -58,10 +60,12 @@ const node = new TreeNode({
     id: 'optional-uuid',        // Auto-generated if not provided
     title: 'Node Title',
     description: 'HTML <strong>supported</strong>',
-    icon: '📄',
+    icon: 'file',
     children: []
 });
 ```
+
+For the tree builder page, `icon` is a Codicon name from `codicon.css` (for example, `file` or `folder`). Existing emoji values are mapped to Codicons when shown in that page.
 
 **Methods:**
 - `addChild(node)` - Add a child node
@@ -106,12 +110,12 @@ renderer.renderToElement(tree, element, {
 
 **Output example:**
 ```
-🌳 Root
-├── 📁 Documents
-│   ├── 📄 Report.pdf
-│   └── 📝 Notes.txt
-└── 🖼️ Pictures
-    └── 📷 Photo.jpg
+type-hierarchy Root
+├── folder Documents
+│   ├── file Report.pdf
+│   └── note Notes.txt
+└── file-media Pictures
+    └── device-camera Photo.jpg
 ```
 
 ### DirectoryRenderer
@@ -174,14 +178,14 @@ const jsonData = {
         id: "1",
         title: "Root",
         description: "Root node",
-        icon: "🌳",
+        icon: "type-hierarchy",
         metadata: { createdAt: "2026-01-14T10:00:00Z" },
         children: [
             {
                 id: "2",
                 title: "Child",
                 description: "Child node",
-                icon: "📁",
+                icon: "folder",
                 children: []
             }
         ]

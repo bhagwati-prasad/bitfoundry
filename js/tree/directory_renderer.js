@@ -1,6 +1,8 @@
 /**
  * DirectoryRenderer - Renders tree as a collapsible directory structure
  */
+import { createCodicon } from './codicon.js';
+
 export class DirectoryRenderer {
     constructor() {
         this.expandedNodes = new Set();
@@ -89,7 +91,7 @@ export class DirectoryRenderer {
             const toggle = document.createElement('span');
             toggle.className = 'tree-toggle';
             const isExpanded = this.expandedNodes.has(node.id);
-            toggle.textContent = isExpanded ? '▼' : '▶';
+            toggle.replaceChildren(createCodicon(isExpanded ? 'chevron-down' : 'chevron-right'));
             toggle.onclick = (e) => {
                 e.stopPropagation();
                 this._toggleNode(node.id, nodeDiv);
@@ -106,7 +108,7 @@ export class DirectoryRenderer {
         if (showIcon) {
             const icon = document.createElement('span');
             icon.className = 'tree-icon';
-            icon.textContent = node.icon;
+            icon.replaceChildren(createCodicon(node.icon));
             header.appendChild(icon);
         }
         
@@ -167,12 +169,12 @@ export class DirectoryRenderer {
             // Collapse
             this.expandedNodes.delete(nodeId);
             childrenContainer.style.display = 'none';
-            toggle.textContent = '▶';
+            toggle.replaceChildren(createCodicon('chevron-right'));
         } else {
             // Expand
             this.expandedNodes.add(nodeId);
             childrenContainer.style.display = 'block';
-            toggle.textContent = '▼';
+            toggle.replaceChildren(createCodicon('chevron-down'));
         }
     }
 
@@ -187,7 +189,7 @@ export class DirectoryRenderer {
             const childrenContainer = nodeDiv.querySelector('.tree-children');
             const toggle = nodeDiv.querySelector('.tree-toggle');
             if (childrenContainer) childrenContainer.style.display = 'block';
-            if (toggle) toggle.textContent = '▼';
+            if (toggle) toggle.replaceChildren(createCodicon('chevron-down'));
         }
     }
 
@@ -202,7 +204,7 @@ export class DirectoryRenderer {
             const childrenContainer = nodeDiv.querySelector('.tree-children');
             const toggle = nodeDiv.querySelector('.tree-toggle');
             if (childrenContainer) childrenContainer.style.display = 'none';
-            if (toggle) toggle.textContent = '▶';
+            if (toggle) toggle.replaceChildren(createCodicon('chevron-right'));
         }
     }
 
@@ -215,7 +217,7 @@ export class DirectoryRenderer {
             el.style.display = 'block';
         });
         document.querySelectorAll('.tree-toggle').forEach(el => {
-            el.textContent = '▼';
+            el.replaceChildren(createCodicon('chevron-down'));
         });
     }
 
@@ -230,7 +232,7 @@ export class DirectoryRenderer {
             el.style.display = 'none';
         });
         document.querySelectorAll('.tree-toggle').forEach(el => {
-            el.textContent = '▶';
+            el.replaceChildren(createCodicon('chevron-right'));
         });
         
         // Re-expand root's immediate children visibility
@@ -312,6 +314,10 @@ export class DirectoryRenderer {
                 .tree-icon {
                     margin-right: 6px;
                     font-size: 16px;
+                }
+
+                .tree-toggle .codicon {
+                    font-size: 10px;
                 }
                 
                 .tree-title {

@@ -11,7 +11,7 @@ export class TreeNode {
      * @param {string} options.icon - Icon identifier (e.g., emoji, icon class, or unicode)
      * @param {TreeNode[]} options.children - Child nodes
      */
-    constructor({ id = null, title = '', description = '', icon = '📄', children = [] } = {}) {
+    constructor({ id = null, title = '', description = '', icon = 'file', children = [] } = {}) {
         this.id = id || this.generateUUID();
         this.title = title;
         this.description = description;
