@@ -187,43 +187,43 @@ export class Tree {
         const root = new TreeNode({
             title: 'Root',
             description: 'This is the root node',
-            icon: '🌳'
+            icon: 'tree'
         });
 
         const child1 = new TreeNode({
             title: 'Documents',
             description: 'Document folder',
-            icon: '📁'
+            icon: 'folder'
         });
 
         const child2 = new TreeNode({
             title: 'Pictures',
             description: 'Picture folder',
-            icon: '🖼️'
+            icon: 'file-media'
         });
 
         const child3 = new TreeNode({
             title: 'Music',
             description: 'Music folder',
-            icon: '🎵'
+            icon: 'music'
         });
 
         const grandchild1 = new TreeNode({
             title: 'Report.pdf',
             description: 'Annual report document',
-            icon: '📄'
+            icon: 'file'
         });
 
         const grandchild2 = new TreeNode({
             title: 'Notes.txt',
             description: 'Personal notes',
-            icon: '📝'
+            icon: 'note'
         });
 
         const grandchild3 = new TreeNode({
             title: 'Vacation.jpg',
             description: 'Vacation photo',
-            icon: '📷'
+            icon: 'device-camera'
         });
 
         child1.addChild(grandchild1);

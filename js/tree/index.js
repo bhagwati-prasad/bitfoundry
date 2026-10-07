@@ -42,7 +42,7 @@ export class TreeBuilder {
                 id: nodeData.id,
                 title: nodeData.title || 'Untitled',
                 description: nodeData.description || '',
-                icon: nodeData.icon || '📄',
+                icon: nodeData.icon || 'file',
                 children: children
             });
         };
