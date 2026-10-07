@@ -59,6 +59,38 @@ if (standardUnicode.children[0].children[0].title !== 'Notes.txt') {
     throw new Error('Standard Unicode tree indentation was not parsed');
 }
 
+const connectorOnlyLines = parserContext.parseTreeText(
+    'Workspace\n' +
+    '│\n' +
+    '├── Documents\n' +
+    '│   │\n' +
+    '│   └── Notes.txt\n' +
+    '│\n' +
+    '└── Launch'
+);
+if (
+    connectorOnlyLines.children.length !== 2 ||
+    connectorOnlyLines.children[0].children[0].title !== 'Notes.txt' ||
+    connectorOnlyLines.children[1].title !== 'Launch'
+) {
+    throw new Error('Connector-only lines should be ignored without changing the tree structure');
+}
+
+const asciiConnectorOnlyLines = parserContext.parseTreeText(
+    'Workspace\n' +
+    '|\n' +
+    '|-- Documents\n' +
+    '|   |\n' +
+    '|   +-- Notes.txt\n' +
+    '\\-- Launch'
+);
+if (
+    asciiConnectorOnlyLines.children.length !== 2 ||
+    asciiConnectorOnlyLines.children[0].children[0].title !== 'Notes.txt'
+) {
+    throw new Error('ASCII connector-only lines should be ignored without changing the tree structure');
+}
+
 const legacy = parserContext.parseTreeText('🌳 Workspace\n└── 📁 Documents');
 if (legacy.icon !== 'type-hierarchy' || legacy.children[0].icon !== 'folder') {
     throw new Error('Legacy emoji icons were not mapped to Codicons');

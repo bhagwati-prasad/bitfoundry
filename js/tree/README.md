@@ -17,7 +17,7 @@ A comprehensive JavaScript tree data structure module with three different visua
 
 No installation required - pure JavaScript ES6 modules.
 
-In `tree_builder.html`, select **Tree** in the builder tools to paste an ASCII or Unicode outline and generate the tree model. Use **Copy text** on the rendered view to copy an outline with Codicon names; generating it updates the Graphical, JavaScript, and JSON editors. Standard `├──` / `└──` Unicode and `|--` / `+--` / `\--` ASCII branches are supported.
+In `tree_builder.html`, select **Tree** in the builder tools to paste an ASCII or Unicode outline and generate the tree model. Use **Copy text** on the rendered view to copy an outline with Codicon names; generating it updates the Graphical, JavaScript, and JSON editors. Standard `├──` / `└──` Unicode and `|--` / `+--` / `\--` ASCII branches are supported. Standalone vertical connector lines such as `│` are ignored.
 
 ## Quick Start
 

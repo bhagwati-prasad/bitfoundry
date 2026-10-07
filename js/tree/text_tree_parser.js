@@ -2,6 +2,7 @@ import { getLegacyCodiconName, normalizeCodiconName } from './codicon.js';
 
 const indentationPattern = /^(?:(?:│|\|) {3}| {4}|\t)*/;
 const branchPattern = /^(?:├|└|\+|\\|\|)(?:─{1,3}|-{1,3})\s+(.*)$/;
+const connectorOnlyPattern = /^(?:│|\|)(?:\s*(?:│|\|))*$/;
 const explicitIconPattern = /^\[([a-z0-9]+(?:-[a-z0-9]+)*)\]\s+(.+)$/;
 const legacyIconPattern = /^(\p{Extended_Pictographic}\uFE0F?)\s+(.+)$/u;
 
@@ -32,7 +33,10 @@ export function parseTreeText(text) {
         throw new Error('Enter a non-empty ASCII or Unicode tree.');
     }
 
-    const lines = text.split(/\r?\n/).filter((line) => line.trim());
+    const lines = text.split(/\r?\n/).filter((line) => {
+        const trimmedLine = line.trim();
+        return trimmedLine && !connectorOnlyPattern.test(trimmedLine);
+    });
     let root = null;
     const parents = [];
     let depthOffset = null;
